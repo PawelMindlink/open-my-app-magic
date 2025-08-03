@@ -15,12 +15,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Inputs } from "./profit-calculator";
+import { Inputs, Currency } from "./profit-calculator";
 import { Scenario, Impact } from "./scenario-manager";
 
 type AddScenarioDialogProps = {
   children: React.ReactNode;
-  onAddScenario: (scenario: Omit<Scenario, "id">) => void;
+  onAddScenario: (scenario: Omit<Scenario, "id" | "active" | "estimateLevel">) => void;
+  currency: Currency;
+};
+
+const currencySymbols: Record<Currency, string> = {
+  USD: "$",
+  EUR: "€",
+  PLN: "zł",
 };
 
 const impactableMetrics: { key: keyof Inputs; label: string }[] = [
@@ -34,7 +41,7 @@ const impactableMetrics: { key: keyof Inputs; label: string }[] = [
   { key: "crRepeatPurchase", label: "CR Repeat Purchase" },
 ];
 
-export function AddScenarioDialog({ children, onAddScenario }: AddScenarioDialogProps) {
+export function AddScenarioDialog({ children, onAddScenario, currency }: AddScenarioDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -61,7 +68,7 @@ export function AddScenarioDialog({ children, onAddScenario }: AddScenarioDialog
         // Basic validation
         return;
     }
-    const newScenario: Omit<Scenario, 'id'> = {
+    const newScenario: Omit<Scenario, 'id' | 'active' | 'estimateLevel'> = {
         name,
         description,
         cost,
@@ -99,7 +106,7 @@ export function AddScenarioDialog({ children, onAddScenario }: AddScenarioDialog
                  <div className="space-y-2">
                     <Label htmlFor="scenario-cost" className="font-headline">Total Investment Cost</Label>
                     <div className="relative">
-                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">$</span>
+                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">{currencySymbols[currency]}</span>
                         <Input id="scenario-cost" type="number" value={cost} onChange={e => setCost(parseFloat(e.target.value) || 0)} className="pl-7" />
                     </div>
                 </div>
@@ -113,24 +120,36 @@ export function AddScenarioDialog({ children, onAddScenario }: AddScenarioDialog
                                 <div className="grid grid-cols-3 gap-2 mt-2">
                                     <div>
                                         <Label htmlFor={`${key}-pessimistic`} className="text-xs text-muted-foreground">Pessimistic</Label>
-                                        <Input id={`${key}-pessimistic`} type="number" placeholder="%" 
-                                          value={impact[key]?.pessimistic ?? ''}
-                                          onChange={e => handleImpactChange(key, 'pessimistic', e.target.value)}
-                                        />
+                                        <div className="relative">
+                                          <Input id={`${key}-pessimistic`} type="number" placeholder="0" 
+                                            value={impact[key]?.pessimistic ?? ''}
+                                            onChange={e => handleImpactChange(key, 'pessimistic', e.target.value)}
+                                            className="pr-6"
+                                          />
+                                          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
+                                        </div>
                                     </div>
                                      <div>
                                         <Label htmlFor={`${key}-realistic`} className="text-xs text-muted-foreground">Realistic</Label>
-                                        <Input id={`${key}-realistic`} type="number" placeholder="%" 
-                                           value={impact[key]?.realistic ?? ''}
-                                           onChange={e => handleImpactChange(key, 'realistic', e.target.value)}
-                                        />
+                                        <div className="relative">
+                                            <Input id={`${key}-realistic`} type="number" placeholder="0" 
+                                              value={impact[key]?.realistic ?? ''}
+                                              onChange={e => handleImpactChange(key, 'realistic', e.target.value)}
+                                              className="pr-6"
+                                            />
+                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
+                                        </div>
                                     </div>
                                      <div>
                                         <Label htmlFor={`${key}-optimistic`} className="text-xs text-muted-foreground">Optimistic</Label>
-                                        <Input id={`${key}-optimistic`} type="number" placeholder="%" 
-                                            value={impact[key]?.optimistic ?? ''}
-                                            onChange={e => handleImpactChange(key, 'optimistic', e.target.value)}
-                                        />
+                                        <div className="relative">
+                                            <Input id={`${key}-optimistic`} type="number" placeholder="0" 
+                                                value={impact[key]?.optimistic ?? ''}
+                                                onChange={e => handleImpactChange(key, 'optimistic', e.target.value)}
+                                                className="pr-6"
+                                            />
+                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
+                                        </div>
                                     </div>
                                 </div>
                              </div>

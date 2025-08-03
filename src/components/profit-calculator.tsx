@@ -13,6 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { ScenarioManager, Scenario, EstimateLevel } from "@/components/scenario-manager";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 export type Inputs = {
   metaAdsBudget: number;
@@ -31,27 +39,36 @@ export type Inputs = {
   marketingOpexFixed: number;
 };
 
+export type Currency = "USD" | "EUR" | "PLN";
+
+const currencySymbols: Record<Currency, string> = {
+  USD: "$",
+  EUR: "€",
+  PLN: "zł",
+};
+
 const inputFields: {
   name: keyof Inputs;
   label: string;
   description: string;
-  adornment: "$" | "%" | null;
+  isCurrency: boolean;
+  isPercentage: boolean;
   group: "meta" | "google" | "general"
 }[] = [
-  { name: "metaAdsBudget", label: "Meta Ads Budget", description: "Total spend on Meta advertising.", adornment: "$", group: 'meta' },
-  { name: "metaCpc", label: "Meta CPC", description: "Cost per click for Meta ads.", adornment: "$", group: 'meta' },
-  { name: "metaConversionRate", label: "Meta Conv. Rate", description: "Conversion rate from Meta clicks.", adornment: "%", group: 'meta' },
-  { name: "googleAdsBudget", label: "Google Ads Budget", description: "Total spend on Google advertising.", adornment: "$", group: 'google' },
-  { name: "googleCpc", label: "Google CPC", description: "Cost per click for Google ads.", adornment: "$", group: 'google' },
-  { name: "googleConversionRate", label: "Google Conv. Rate", description: "Conversion rate from Google clicks.", adornment: "%", group: 'google' },
-  { name: "organicSessions", label: "Organic Sessions", description: "Website sessions from organic search.", adornment: null, group: 'general' },
-  { name: "crFirstPurchase", label: "Baseline CR First Purchase", description: "Conversion rate for first-time buyers (non-ad traffic).", adornment: "%", group: 'general' },
-  { name: "aovFirstPurchase", label: "AOV First Purchase", description: "Average order value for first-time buyers.", adornment: "$", group: 'general' },
-  { name: "gmFirstPurchase", label: "GM First Purchase", description: "Gross margin on first-time purchases.", adornment: "%", group: 'general' },
-  { name: "crRepeatPurchase", label: "CR Repeat Purchase", description: "Conversion rate for repeat customers.", adornment: "%", group: 'general' },
-  { name: "aovRepeatPurchase", label: "AOV Repeat Purchase", description: "Average order value for repeat customers.", adornment: "$", group: 'general' },
-  { name: "gmRepeatPurchase", label: "GM Repeat Purchase", description: "Gross margin on repeat purchases.", adornment: "%", group: 'general' },
-  { name: "marketingOpexFixed", label: "Marketing OPEX (Fixed)", description: "Fixed marketing operational expenses.", adornment: "$", group: 'general' },
+  { name: "metaAdsBudget", label: "Meta Ads Budget", description: "Total spend on Meta advertising.", isCurrency: true, isPercentage: false, group: 'meta' },
+  { name: "metaCpc", label: "Meta CPC", description: "Cost per click for Meta ads.", isCurrency: true, isPercentage: false, group: 'meta' },
+  { name: "metaConversionRate", label: "Meta Conv. Rate", description: "Conversion rate from Meta clicks.", isCurrency: false, isPercentage: true, group: 'meta' },
+  { name: "googleAdsBudget", label: "Google Ads Budget", description: "Total spend on Google advertising.", isCurrency: true, isPercentage: false, group: 'google' },
+  { name: "googleCpc", label: "Google CPC", description: "Cost per click for Google ads.", isCurrency: true, isPercentage: false, group: 'google' },
+  { name: "googleConversionRate", label: "Google Conv. Rate", description: "Conversion rate from Google clicks.", isCurrency: false, isPercentage: true, group: 'google' },
+  { name: "organicSessions", label: "Organic Sessions", description: "Website sessions from organic search.", isCurrency: false, isPercentage: false, group: 'general' },
+  { name: "crFirstPurchase", label: "Baseline CR First Purchase", description: "Conversion rate for first-time buyers (non-ad traffic).", isCurrency: false, isPercentage: true, group: 'general' },
+  { name: "aovFirstPurchase", label: "AOV First Purchase", description: "Average order value for first-time buyers.", isCurrency: true, isPercentage: false, group: 'general' },
+  { name: "gmFirstPurchase", label: "GM First Purchase", description: "Gross margin on first-time purchases.", isCurrency: false, isPercentage: true, group: 'general' },
+  { name: "crRepeatPurchase", label: "CR Repeat Purchase", description: "Conversion rate for repeat customers.", isCurrency: false, isPercentage: true, group: 'general' },
+  { name: "aovRepeatPurchase", label: "AOV Repeat Purchase", description: "Average order value for repeat customers.", isCurrency: true, isPercentage: false, group: 'general' },
+  { name: "gmRepeatPurchase", label: "GM Repeat Purchase", description: "Gross margin on repeat purchases.", isCurrency: false, isPercentage: true, group: 'general' },
+  { name: "marketingOpexFixed", label: "Marketing OPEX (Fixed)", description: "Fixed marketing operational expenses.", isCurrency: true, isPercentage: false, group: 'general' },
 ];
 
 
@@ -74,7 +91,8 @@ export function ProfitCalculator() {
   });
 
   const [activeScenarios, setActiveScenarios] = useState<Scenario[]>([]);
-  const [estimateLevel, setEstimateLevel] = useState<EstimateLevel>('realistic');
+  const [globalEstimateLevel, setGlobalEstimateLevel] = useState<EstimateLevel | 'individual'>('realistic');
+  const [currency, setCurrency] = useState<Currency>("USD");
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +110,7 @@ export function ProfitCalculator() {
 
     activeScenarios.forEach(scenario => {
       scenarioCosts += scenario.cost;
+      const estimateLevel = globalEstimateLevel === 'individual' ? scenario.estimateLevel : globalEstimateLevel;
       for (const key in scenario.impact) {
         const impactKey = key as keyof Inputs;
         const modifier = scenario.impact[impactKey]?.[estimateLevel];
@@ -138,10 +157,10 @@ export function ProfitCalculator() {
 
 
     return { totalSessions, cpSessionBlended, totalGrossProfit, netProfit, totalMarketingCost, contributionMargin, roi };
-  }, [inputs, activeScenarios, estimateLevel]);
+  }, [inputs, activeScenarios, globalEstimateLevel]);
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 
   const formatNumber = (value: number) =>
     new Intl.NumberFormat("en-US").format(value);
@@ -165,20 +184,34 @@ export function ProfitCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-3 space-y-8">
           <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="font-headline text-2xl">Business Inputs</CardTitle>
-              <CardDescription>Adjust these values to model your profit.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="font-headline text-2xl">Business Inputs</CardTitle>
+                  <CardDescription>Adjust these values to model your profit.</CardDescription>
+                </div>
+                <div className="w-32">
+                  <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
+                      <SelectTrigger>
+                          <SelectValue placeholder="Currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                          <SelectItem value="EUR">EUR (€)</SelectItem>
+                          <SelectItem value="PLN">PLN (zł)</SelectItem>
+                      </SelectContent>
+                  </Select>
+                </div>
             </CardHeader>
             <CardContent>
               <h3 className="font-headline text-lg mb-4">Meta Ads</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8 mb-6">
-                {inputFields.filter(f => f.group === 'meta').map(({ name, label, description, adornment }) => (
+                {inputFields.filter(f => f.group === 'meta').map(({ name, label, description, isCurrency, isPercentage }) => (
                   <div key={name} className="space-y-2">
                     <Label htmlFor={name} className="font-headline">{label}</Label>
                     <div className="relative">
-                      {adornment && (
+                      {isCurrency && (
                         <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                          {adornment}
+                          {currencySymbols[currency]}
                         </span>
                       )}
                       <Input
@@ -187,9 +220,14 @@ export function ProfitCalculator() {
                         type="number"
                         value={inputs[name]}
                         onChange={handleInputChange}
-                        className={cn("transition-shadow", adornment ? "pl-7" : "")}
+                        className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
                         aria-describedby={`${name}-description`}
                       />
+                      {isPercentage && (
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                          %
+                        </span>
+                      )}
                     </div>
                     <p id={`${name}-description`} className="text-xs text-muted-foreground">{description}</p>
                   </div>
@@ -198,13 +236,13 @@ export function ProfitCalculator() {
               <Separator className="my-6" />
               <h3 className="font-headline text-lg mb-4">Google Ads</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8 mb-6">
-                {inputFields.filter(f => f.group === 'google').map(({ name, label, description, adornment }) => (
+                {inputFields.filter(f => f.group === 'google').map(({ name, label, description, isCurrency, isPercentage }) => (
                   <div key={name} className="space-y-2">
                     <Label htmlFor={name} className="font-headline">{label}</Label>
                     <div className="relative">
-                      {adornment && (
+                       {isCurrency && (
                         <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                          {adornment}
+                          {currencySymbols[currency]}
                         </span>
                       )}
                       <Input
@@ -213,9 +251,14 @@ export function ProfitCalculator() {
                         type="number"
                         value={inputs[name]}
                         onChange={handleInputChange}
-                        className={cn("transition-shadow", adornment ? "pl-7" : "")}
+                        className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
                         aria-describedby={`${name}-description`}
                       />
+                       {isPercentage && (
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                          %
+                        </span>
+                      )}
                     </div>
                     <p id={`${name}-description`} className="text-xs text-muted-foreground">{description}</p>
                   </div>
@@ -224,13 +267,13 @@ export function ProfitCalculator() {
               <Separator className="my-6" />
               <h3 className="font-headline text-lg mb-4">General Business Metrics</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                 {inputFields.filter(f => f.group === 'general').map(({ name, label, description, adornment }) => (
+                 {inputFields.filter(f => f.group === 'general').map(({ name, label, description, isCurrency, isPercentage }) => (
                   <div key={name} className="space-y-2">
                     <Label htmlFor={name} className="font-headline">{label}</Label>
                     <div className="relative">
-                      {adornment && (
+                       {isCurrency && (
                         <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                          {adornment}
+                          {currencySymbols[currency]}
                         </span>
                       )}
                       <Input
@@ -239,9 +282,14 @@ export function ProfitCalculator() {
                         type="number"
                         value={inputs[name]}
                         onChange={handleInputChange}
-                        className={cn("transition-shadow", adornment ? "pl-7" : "")}
+                        className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
                         aria-describedby={`${name}-description`}
                       />
+                       {isPercentage && (
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                          %
+                        </span>
+                      )}
                     </div>
                     <p id={`${name}-description`} className="text-xs text-muted-foreground">{description}</p>
                   </div>
@@ -250,8 +298,11 @@ export function ProfitCalculator() {
             </CardContent>
           </Card>
            <ScenarioManager 
+              currency={currency}
+              activeScenarios={activeScenarios}
               onActiveScenariosChange={setActiveScenarios}
-              onEstimateLevelChange={setEstimateLevel}
+              globalEstimateLevel={globalEstimateLevel}
+              onGlobalEstimateLevelChange={setGlobalEstimateLevel}
             />
         </div>
 

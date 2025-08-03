@@ -4,12 +4,20 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Inputs } from "./profit-calculator";
+import { Inputs, Currency } from "./profit-calculator";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { AddScenarioDialog } from "./add-scenario-dialog";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "./ui/separator";
 
 export type EstimateLevel = 'pessimistic' | 'realistic' | 'optimistic';
 
@@ -23,9 +31,11 @@ export type Scenario = {
   description: string;
   cost: number;
   impact: Partial<Record<keyof Inputs, Impact>>; // Percentage change
+  active: boolean;
+  estimateLevel: EstimateLevel;
 };
 
-const initialScenarios: Scenario[] = [
+const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel'>[] = [
   {
     id: "cro-project",
     name: "Conversion Rate Optimization Project",
@@ -73,44 +83,52 @@ const initialScenarios: Scenario[] = [
 ];
 
 type ScenarioManagerProps = {
+  currency: Currency;
+  activeScenarios: Scenario[];
   onActiveScenariosChange: (activeScenarios: Scenario[]) => void;
-  onEstimateLevelChange: (level: EstimateLevel) => void;
+  globalEstimateLevel: EstimateLevel | 'individual';
+  onGlobalEstimateLevelChange: (level: EstimateLevel | 'individual') => void;
 };
 
-export function ScenarioManager({ onActiveScenariosChange, onEstimateLevelChange }: ScenarioManagerProps) {
-  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(initialScenarios);
-  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
-  const [estimateLevel, setEstimateLevel] = useState<EstimateLevel>('realistic');
+export function ScenarioManager({ 
+    currency,
+    onActiveScenariosChange, 
+    globalEstimateLevel,
+    onGlobalEstimateLevelChange 
+}: ScenarioManagerProps) {
+  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(() => 
+    initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic'}))
+  );
 
-  const handleAddScenario = (newScenario: Omit<Scenario, 'id'>) => {
-    const scenarioWithId = { ...newScenario, id: `custom-${Date.now()}` };
+  const handleAddScenario = (newScenario: Omit<Scenario, 'id' | 'active' | 'estimateLevel'>) => {
+    const scenarioWithId = { ...newScenario, id: `custom-${Date.now()}`, active: true, estimateLevel: 'realistic' as EstimateLevel };
     setAvailableScenarios(prev => [...prev, scenarioWithId]);
   };
 
-  const toggleScenario = (scenarioId: string) => {
-    setActiveIds(prev => {
-      const newIds = new Set(prev);
-      if (newIds.has(scenarioId)) {
-        newIds.delete(scenarioId);
-      } else {
-        newIds.add(scenarioId);
-      }
-      return newIds;
-    });
+  const handleDeleteScenario = (scenarioId: string) => {
+    setAvailableScenarios(prev => prev.filter(s => s.id !== scenarioId));
   };
 
-  useEffect(() => {
-    const activeScenarios = availableScenarios.filter(s => activeIds.has(s.id));
-    onActiveScenariosChange(activeScenarios);
-  }, [activeIds, onActiveScenariosChange, availableScenarios]);
+  const toggleScenario = (scenarioId: string) => {
+    setAvailableScenarios(prev => prev.map(s => 
+        s.id === scenarioId ? {...s, active: !s.active} : s
+    ));
+  };
+  
+  const setScenarioEstimateLevel = (scenarioId: string, level: EstimateLevel) => {
+     setAvailableScenarios(prev => prev.map(s => 
+        s.id === scenarioId ? {...s, estimateLevel: level} : s
+    ));
+  }
 
   useEffect(() => {
-    onEstimateLevelChange(estimateLevel);
-  }, [estimateLevel, onEstimateLevelChange]);
+    const active = availableScenarios.filter(s => s.active);
+    onActiveScenariosChange(active);
+  }, [availableScenarios, onActiveScenariosChange]);
 
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
+    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 
   const formatImpact = (value: number) => {
     const sign = value > 0 ? "+" : "";
@@ -143,7 +161,7 @@ export function ScenarioManager({ onActiveScenariosChange, onEstimateLevelChange
             Select different "what-if" scenarios to see their layered impact on your profitability.
             </CardDescription>
         </div>
-        <AddScenarioDialog onAddScenario={handleAddScenario}>
+        <AddScenarioDialog onAddScenario={handleAddScenario} currency={currency}>
             <Button>
                 <PlusCircle className="mr-2" />
                 Add Scenario
@@ -152,8 +170,8 @@ export function ScenarioManager({ onActiveScenariosChange, onEstimateLevelChange
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="p-4 border rounded-lg bg-card-foreground/5">
-            <Label className="font-headline text-base mb-3 block">Estimation Level</Label>
-            <RadioGroup defaultValue="realistic" value={estimateLevel} onValueChange={(value) => setEstimateLevel(value as EstimateLevel)} className="flex space-x-4">
+            <Label className="font-headline text-base mb-3 block">Global Estimation Level</Label>
+            <RadioGroup value={globalEstimateLevel} onValueChange={(value) => onGlobalEstimateLevelChange(value as any)} className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="pessimistic" id="pessimistic" />
                     <Label htmlFor="pessimistic">Pessimistic</Label>
@@ -166,38 +184,77 @@ export function ScenarioManager({ onActiveScenariosChange, onEstimateLevelChange
                     <RadioGroupItem value="optimistic" id="optimistic" />
                     <Label htmlFor="optimistic">Optimistic</Label>
                 </div>
+                 <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="individual" id="individual" />
+                    <Label htmlFor="individual">Individual</Label>
+                </div>
             </RadioGroup>
         </div>
 
         <div className="space-y-4">
-            {availableScenarios.map((scenario) => (
-            <div key={scenario.id} className="flex items-start justify-between p-4 border rounded-lg">
-                <div className="flex-1 space-y-2 pr-4">
-                    <div className="flex items-center gap-4">
-                        <Label htmlFor={scenario.id} className="font-headline text-base cursor-pointer flex-grow">
-                            {scenario.name}
-                        </Label>
-                        <Badge variant="outline">{formatCurrency(scenario.cost)}</Badge>
+            {availableScenarios.map((scenario) => {
+              const currentEstimateLevel = globalEstimateLevel === 'individual' ? scenario.estimateLevel : globalEstimateLevel;
+              return (
+                <div key={scenario.id} className="p-4 border rounded-lg">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1 space-y-2 pr-4">
+                            <div className="flex items-center gap-4">
+                                <Label htmlFor={scenario.id} className="font-headline text-base cursor-pointer flex-grow">
+                                    {scenario.name}
+                                </Label>
+                                <Badge variant="outline">{formatCurrency(scenario.cost)}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{scenario.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           {scenario.id.startsWith('custom-') && (
+                             <Button variant="ghost" size="icon" onClick={() => handleDeleteScenario(scenario.id)}>
+                               <Trash2 className="w-4 h-4 text-destructive" />
+                             </Button>
+                           )}
+                           <Switch
+                                id={scenario.id}
+                                checked={scenario.active}
+                                onCheckedChange={() => toggleScenario(scenario.id)}
+                            />
+                        </div>
                     </div>
-                <p className="text-sm text-muted-foreground">{scenario.description}</p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                    {Object.entries(scenario.impact).map(([key, value]) => (
-                        <Badge key={key} variant="secondary" className="font-mono">
-                            {impactMetricLabels[key as keyof Inputs]}:{' '}
-                            <span className={(value[estimateLevel] ?? 0) > 0 ? 'text-green-700' : 'text-red-700'}>
-                                {formatImpact(value[estimateLevel] ?? 0)}
-                            </span>
-                        </Badge>
-                    ))}
+                    <Separator className="my-4" />
+                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                      <div className="flex-1">
+                        <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Impacts</Label>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            {Object.entries(scenario.impact).map(([key, value]) => (
+                                <Badge key={key} variant="secondary" className="font-mono">
+                                    {impactMetricLabels[key as keyof Inputs]}:{' '}
+                                    <span className={(value[currentEstimateLevel] ?? 0) > 0 ? 'text-green-700' : 'text-red-700'}>
+                                        {formatImpact(value[currentEstimateLevel] ?? 0)}
+                                    </span>
+                                </Badge>
+                            ))}
+                        </div>
+                      </div>
+                      <div className="w-full md:w-48">
+                         <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Confidence</Label>
+                         <Select 
+                            value={scenario.estimateLevel} 
+                            onValueChange={(v) => setScenarioEstimateLevel(scenario.id, v as EstimateLevel)}
+                            disabled={globalEstimateLevel !== 'individual'}
+                          >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select estimate" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="pessimistic">Pessimistic</SelectItem>
+                                <SelectItem value="realistic">Realistic</SelectItem>
+                                <SelectItem value="optimistic">Optimistic</SelectItem>
+                            </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                 </div>
-                </div>
-                <Switch
-                id={scenario.id}
-                checked={activeIds.has(scenario.id)}
-                onCheckedChange={() => toggleScenario(scenario.id)}
-                />
-            </div>
-            ))}
+              )
+            })}
         </div>
       </CardContent>
     </Card>
