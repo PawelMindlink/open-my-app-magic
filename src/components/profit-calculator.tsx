@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { ScenarioManager, Scenario } from "@/components/scenario-manager";
+import { ScenarioManager, Scenario, EstimateLevel } from "@/components/scenario-manager";
 
 export type Inputs = {
   metaAdsBudget: number;
@@ -74,6 +74,7 @@ export function ProfitCalculator() {
   });
 
   const [activeScenarios, setActiveScenarios] = useState<Scenario[]>([]);
+  const [estimateLevel, setEstimateLevel] = useState<EstimateLevel>('realistic');
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,8 +93,11 @@ export function ProfitCalculator() {
     activeScenarios.forEach(scenario => {
       scenarioCosts += scenario.cost;
       for (const key in scenario.impact) {
-        const modifier = scenario.impact[key as keyof Inputs] as number;
-        (modifiedInputs[key as keyof Inputs] as number) *= (1 + modifier / 100);
+        const impactKey = key as keyof Inputs;
+        const modifier = scenario.impact[impactKey]?.[estimateLevel];
+        if (typeof modifier === 'number') {
+           (modifiedInputs[impactKey] as number) *= (1 + modifier / 100);
+        }
       }
     });
     
@@ -127,24 +131,33 @@ export function ProfitCalculator() {
     const grossProfitRepeatPurchase = revenueRepeatPurchase * (gmRepeatPurchase / 100);
 
     const totalGrossProfit = grossProfitFirstPurchase + grossProfitRepeatPurchase;
+    const contributionMargin = totalGrossProfit - totalAdsBudget;
     const totalMarketingCost = totalAdsBudget + marketingOpexFixed;
     const netProfit = totalGrossProfit - totalMarketingCost;
+    const roi = totalMarketingCost > 0 ? (netProfit / totalMarketingCost) * 100 : 0;
 
-    return { totalSessions, cpSessionBlended, totalGrossProfit, netProfit, totalMarketingCost };
-  }, [inputs, activeScenarios]);
+
+    return { totalSessions, cpSessionBlended, totalGrossProfit, netProfit, totalMarketingCost, contributionMargin, roi };
+  }, [inputs, activeScenarios, estimateLevel]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 
   const formatNumber = (value: number) =>
     new Intl.NumberFormat("en-US").format(value);
+  
+  const formatPercentage = (value: number) =>
+    `${value.toFixed(2)}%`;
+
 
   const resultMetrics = [
-    { key: "totalGrossProfit", label: "Total Gross Profit", format: formatCurrency },
     { key: "netProfit", label: "Net Profit", format: formatCurrency },
+    { key: "roi", label: "Return on Investment (ROI)", format: formatPercentage },
+    { key: "contributionMargin", label: "Contribution Margin", format: formatCurrency },
+    { key: "totalGrossProfit", label: "Total Gross Profit", format: formatCurrency },
+    { key: "totalMarketingCost", label: "Total Marketing Cost", format: formatCurrency },
     { key: "cpSessionBlended", label: "Blended Cost Per Session", format: formatCurrency },
     { key: "totalSessions", label: "Total Sessions", format: formatNumber },
-    { key: "totalMarketingCost", label: "Total Marketing Cost", format: formatCurrency },
   ];
 
   return (
@@ -236,7 +249,10 @@ export function ProfitCalculator() {
               </div>
             </CardContent>
           </Card>
-           <ScenarioManager onActiveScenariosChange={setActiveScenarios} />
+           <ScenarioManager 
+              onActiveScenariosChange={setActiveScenarios}
+              onEstimateLevelChange={setEstimateLevel}
+            />
         </div>
 
         <Card className="lg:col-span-2 shadow-lg sticky top-8">
@@ -250,8 +266,9 @@ export function ProfitCalculator() {
                 <div className="flex justify-between items-center">
                   <p className="text-muted-foreground">{label}</p>
                   <p className={cn(
-                    "font-headline text-2xl font-bold transition-colors duration-300",
-                    key === 'netProfit' && (results.netProfit < 0 ? 'text-destructive' : 'text-green-500')
+                    "font-headline text-xl font-bold transition-colors duration-300",
+                    key === 'netProfit' && (results.netProfit < 0 ? 'text-destructive' : 'text-green-500'),
+                    key === 'roi' && (results.roi < 0 ? 'text-destructive' : 'text-green-500'),
                   )}>
                     {format(results[key as keyof typeof results])}
                   </p>
