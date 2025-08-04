@@ -40,11 +40,19 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
     activeScenarios.forEach(scenario => {
       scenarioCosts += scenario.cost;
       const estimateLevel = globalEstimateLevel === 'individual' ? scenario.estimateLevel : globalEstimateLevel;
+      
       for (const key in scenario.impact) {
         const impactKey = key as keyof Inputs;
-        const modifier = scenario.impact[impactKey]?.[estimateLevel];
-        if (typeof modifier === 'number') {
-           (modifiedInputs[impactKey] as number) *= (1 + modifier / 100);
+        const impact = scenario.impact[impactKey];
+        if (impact) {
+          const modifier = impact.value[estimateLevel];
+          if (typeof modifier === 'number') {
+            if (impact.type === 'percentage') {
+              (modifiedInputs[impactKey] as number) *= (1 + modifier / 100);
+            } else { // absolute
+              modifiedInputs[impactKey] = modifier;
+            }
+          }
         }
       }
     });
@@ -383,6 +391,7 @@ export function ProfitCalculator() {
               onActiveScenariosChange={setActiveScenarios}
               globalEstimateLevel={globalEstimateLevel}
               onGlobalEstimateLevelChange={setGlobalEstimateLevel}
+              currentInputs={inputs}
             />
         </div>
 

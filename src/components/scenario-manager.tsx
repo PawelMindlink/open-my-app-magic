@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "./ui/separator";
-import { Inputs, Currency, inputFields, Impact, EstimateLevel } from "@/lib/types";
+import { Inputs, Currency, Impact, EstimateLevel, ImpactType, impactableMetrics } from "@/lib/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +37,7 @@ export type Scenario = {
   name: string;
   description: string;
   cost: number;
-  impact: Partial<Record<keyof Inputs, Impact>>; // Percentage change
+  impact: Partial<Record<keyof Inputs, Impact>>;
   active: boolean;
   estimateLevel: EstimateLevel;
   isCustom: boolean;
@@ -50,8 +50,8 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[
     description: "Implement A/B testing and UX improvements on key landing pages.",
     cost: 1500,
     impact: { 
-        metaRemarketingConversionRate: { pessimistic: 5, realistic: 10, optimistic: 15 }, 
-        googleRemarketingConversionRate: { pessimistic: 5, realistic: 10, optimistic: 15 } 
+      metaRemarketingConversionRate: { type: 'percentage', value: { pessimistic: 5, realistic: 10, optimistic: 15 } },
+      googleRemarketingConversionRate: { type: 'percentage', value: { pessimistic: 5, realistic: 10, optimistic: 15 } },
     },
   },
   {
@@ -59,21 +59,21 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[
     name: "SEO Optimization Campaign",
     description: "Improve organic search rankings through content marketing and technical SEO.",
     cost: 2000,
-    impact: { organicSessions: { pessimistic: 10, realistic: 20, optimistic: 30 } },
+    impact: { organicSessions: { type: 'percentage', value: { pessimistic: 10, realistic: 20, optimistic: 30 } } },
   },
   {
     id: "product-bundle",
     name: "Add Product Bundle Landing Page",
     description: "Introduce a new landing page offering a discounted product bundle.",
     cost: 500,
-    impact: { aovFirstPurchase: { pessimistic: 5, realistic: 15, optimistic: 20 } },
+    impact: { aovFirstPurchase: { type: 'percentage', value: { pessimistic: 5, realistic: 15, optimistic: 20 } } },
   },
   {
     id: "email-marketing",
     name: "Start Email Marketing Campaign",
     description: "Launch a newsletter and automated email flows to engage customers.",
     cost: 800,
-    impact: { crRepeatPurchase: { pessimistic: 10, realistic: 25, optimistic: 35 } },
+    impact: { crRepeatPurchase: { type: 'percentage', value: { pessimistic: 10, realistic: 25, optimistic: 35 } } },
   },
    {
     id: "agency-ads",
@@ -81,10 +81,10 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[
     description: "Outsource ad management to an expert agency for better efficiency.",
     cost: 4000,
     impact: { 
-        metaProspectingCpc: { pessimistic: -5, realistic: -10, optimistic: -15 }, 
-        googleProspectingCpc: { pessimistic: -5, realistic: -10, optimistic: -15 }, 
-        metaProspectingConversionRate: { pessimistic: 5, realistic: 15, optimistic: 20 }, 
-        googleProspectingConversionRate: { pessimistic: 5, realistic: 15, optimistic: 20 } 
+        metaProspectingCpc: { type: 'percentage', value: { pessimistic: -5, realistic: -10, optimistic: -15 } },
+        googleProspectingCpc: { type: 'percentage', value: { pessimistic: -5, realistic: -10, optimistic: -15 } },
+        metaProspectingConversionRate: { type: 'percentage', value: { pessimistic: 5, realistic: 15, optimistic: 20 } },
+        googleProspectingConversionRate: { type: 'percentage', value: { pessimistic: 5, realistic: 15, optimistic: 20 } },
     },
   },
   {
@@ -93,9 +93,9 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[
     description: "Optimize images, implement caching, and use a CDN to decrease page load times.",
     cost: 2500,
     impact: { 
-        metaProspectingBounceRate: { pessimistic: -10, realistic: -20, optimistic: -30 }, 
-        googleProspectingBounceRate: { pessimistic: -10, realistic: -20, optimistic: -30 },
-        organicSessions: { pessimistic: 2, realistic: 5, optimistic: 8 }
+        metaProspectingBounceRate: { type: 'percentage', value: { pessimistic: -10, realistic: -20, optimistic: -30 } },
+        googleProspectingBounceRate: { type: 'percentage', value: { pessimistic: -10, realistic: -20, optimistic: -30 } },
+        organicSessions: { type: 'percentage', value: { pessimistic: 2, realistic: 5, optimistic: 8 } }
     },
   },
 ];
@@ -109,6 +109,7 @@ type ScenarioManagerProps = {
   onActiveScenariosChange: (activeScenarios: Scenario[]) => void;
   globalEstimateLevel: EstimateLevel | 'individual';
   onGlobalEstimateLevelChange: (level: EstimateLevel | 'individual') => void;
+  currentInputs: Inputs;
 };
 
 export function ScenarioManager({ 
@@ -116,7 +117,8 @@ export function ScenarioManager({
     activeScenarios,
     onActiveScenariosChange, 
     globalEstimateLevel,
-    onGlobalEstimateLevelChange 
+    onGlobalEstimateLevelChange,
+    currentInputs,
 }: ScenarioManagerProps) {
   const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -197,15 +199,13 @@ export function ScenarioManager({
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
-  const formatImpact = (value: number) => {
+  const formatImpact = (value: number, type: ImpactType) => {
     const sign = value > 0 ? "+" : "";
-    return `${sign}${value}%`;
+    if (type === 'percentage') {
+      return `${sign}${value}%`;
+    }
+    return value.toString();
   }
-
-  const impactMetricLabels: Record<string, string> = inputFields.reduce((acc, field) => {
-    acc[field.name] = field.label;
-    return acc;
-  }, {} as Record<string, string>);
 
   if (!isInitialized) {
       return (
@@ -227,6 +227,7 @@ export function ScenarioManager({
         onSaveScenario={handleSaveScenario}
         currency={currency}
         scenario={editingScenario}
+        currentInputs={currentInputs}
     />
 
     <Card className="shadow-lg">
@@ -239,11 +240,11 @@ export function ScenarioManager({
         </div>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleResetScenarios}>
-                <RefreshCw className="mr-2" />
+                <RefreshCw className="mr-2 h-4 w-4" />
                 Reset
             </Button>
             <Button onClick={() => { setEditingScenario(null); setIsFormOpen(true); }}>
-                <PlusCircle className="mr-2" />
+                <PlusCircle className="mr-2 h-4 w-4" />
                 Add Scenario
             </Button>
         </div>
@@ -323,14 +324,16 @@ export function ScenarioManager({
                       <div className="flex-1">
                         <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Impacts</Label>
                         <div className="flex flex-wrap gap-2 pt-1">
-                            {Object.entries(scenario.impact).map(([key, value]) => {
-                                const impactValue = value?.[currentEstimateLevel];
-                                if (impactValue === undefined || impactValue === 0) return null;
+                            {Object.entries(scenario.impact).map(([key, impact]) => {
+                                if (!impact) return null;
+                                const impactValue = impact.value[currentEstimateLevel];
+                                const metric = impactableMetrics.find(m => m.name === key);
+                                if (impactValue === undefined || impactValue === 0 || !metric) return null;
                                 return (
                                     <Badge key={key} variant="secondary" className="font-mono">
-                                        {impactMetricLabels[key as keyof Inputs]}:{' '}
+                                        {metric.label}:{' '}
                                         <span className={impactValue > 0 ? 'text-green-500' : 'text-destructive'}>
-                                            {formatImpact(impactValue)}
+                                            {formatImpact(impactValue, impact.type)}
                                         </span>
                                     </Badge>
                                 )
@@ -364,3 +367,5 @@ export function ScenarioManager({
     </>
   );
 }
+
+    

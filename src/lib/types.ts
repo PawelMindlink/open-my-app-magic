@@ -3,9 +3,19 @@ export type Currency = "USD" | "EUR" | "PLN";
 
 export type EstimateLevel = 'pessimistic' | 'realistic' | 'optimistic';
 
-export type Impact = {
-  [key in EstimateLevel]?: number;
+export type ImpactType = 'percentage' | 'absolute';
+
+export type ImpactValue = {
+  pessimistic?: number;
+  realistic?: number;
+  optimistic?: number;
 };
+
+export type Impact = {
+  type: ImpactType;
+  value: ImpactValue;
+};
+
 
 export type Inputs = {
   // Meta Ads - Prospecting
@@ -39,7 +49,7 @@ export type Inputs = {
   marketingOpexFixed: number;
 };
 
-type InputField = {
+export type InputField = {
     name: keyof Inputs;
     label: string;
     group: 'meta-prospecting' | 'meta-remarketing' | 'google-prospecting' | 'google-remarketing' | 'general-organic' | 'general-first-purchase' | 'general-repeat-purchase' | 'general-opex';
@@ -81,3 +91,8 @@ export const inputFields: InputField[] = [
 
     { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'general-opex', isCurrency: true },
 ];
+
+export const impactableMetrics = inputFields.filter(field => 
+    !field.name.toLowerCase().includes('budget') && 
+    field.name !== 'marketingOpexFixed'
+);
