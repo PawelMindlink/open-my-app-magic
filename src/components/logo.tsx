@@ -24,6 +24,19 @@ export const Logo = ({ className }: { className?: string }) => {
           mindlink
         </text>
 
+        <text
+          x="50%"
+          y="60"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          fill="#FFFFFF"
+          fontFamily="Assistant, sans-serif"
+          fontSize="10"
+          letterSpacing="1.5"
+        >
+          DIGITAL
+        </text>
+
         {/* First dot */}
         <g transform="translate(33, 31) rotate(180)">
            <use href="#pentagon" fill="#F77F00" />
