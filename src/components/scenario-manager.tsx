@@ -343,7 +343,7 @@ export function ScenarioManager({
                       <div className="w-full md:w-48">
                          <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Confidence</Label>
                          <Select 
-                            value={scenario.estimateLevel} 
+                            value={globalEstimateLevel === 'individual' ? scenario.estimateLevel : globalEstimateLevel}
                             onValueChange={(v) => setScenarioEstimateLevel(scenario.id, v as EstimateLevel)}
                             disabled={globalEstimateLevel !== 'individual'}
                           >

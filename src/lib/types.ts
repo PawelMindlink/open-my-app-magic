@@ -38,65 +38,96 @@ export type Inputs = {
   googleRemarketingCpc: number;
   googleRemarketingBounceRate: number;
   googleRemarketingConversionRate: number;
-  // General
+  // Organic
   organicSessions: number;
   crFirstPurchase: number; // Conversion rate for first-time purchases from organic
+  // First Purchase
   aovFirstPurchase: number; // Average order value
   gmFirstPurchase: number; // Gross margin for first-time purchases
+  // Repeat Purchase
   crRepeatPurchase: number; // Conversion rate for repeat purchases
   aovRepeatPurchase: number; // Average order value for repeat purchases
   gmRepeatPurchase: number; // Gross margin for repeat purchases
+  // OPEX
   marketingOpexFixed: number;
 };
 
 export type InputField = {
     name: keyof Inputs;
     label: string;
-    group: 'meta-prospecting' | 'meta-remarketing' | 'google-prospecting' | 'google-remarketing' | 'general-organic' | 'general-first-purchase' | 'general-repeat-purchase' | 'general-opex';
+    group: 'meta' | 'google' | 'organic' | 'first-purchase' | 'repeat-purchase' | 'opex';
+    subGroup?: 'prospecting' | 'remarketing';
     isCurrency?: boolean;
     isPercentage?: boolean;
 }
 
 export const inputFields: InputField[] = [
     // Meta Prospecting
-    { name: 'metaProspectingBudget', label: 'Budget', group: 'meta-prospecting', isCurrency: true },
-    { name: 'metaProspectingCpc', label: 'Prospecting CPC', group: 'meta-prospecting', isCurrency: true },
-    { name: 'metaProspectingBounceRate', label: 'Prospecting Bounce Rate', group: 'meta-prospecting', isPercentage: true },
-    { name: 'metaProspectingConversionRate', label: 'Prospecting Conversion Rate', group: 'meta-prospecting', isPercentage: true },
+    { name: 'metaProspectingBudget', label: 'Budget', group: 'meta', subGroup: 'prospecting', isCurrency: true },
+    { name: 'metaProspectingCpc', label: 'CPC', group: 'meta', subGroup: 'prospecting', isCurrency: true },
+    { name: 'metaProspectingBounceRate', label: 'Bounce Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true },
+    { name: 'metaProspectingConversionRate', label: 'Conversion Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true },
     // Meta Remarketing
-    { name: 'metaRemarketingBudget', label: 'Budget', group: 'meta-remarketing', isCurrency: true },
-    { name: 'metaRemarketingCpc', label: 'Remarketing CPC', group: 'meta-remarketing', isCurrency: true },
-    { name: 'metaRemarketingBounceRate', label: 'Remarketing Bounce Rate', group: 'meta-remarketing', isPercentage: true },
-    { name: 'metaRemarketingConversionRate', label: 'Remarketing Conversion Rate', group: 'meta-remarketing', isPercentage: true },
+    { name: 'metaRemarketingBudget', label: 'Budget', group: 'meta', subGroup: 'remarketing', isCurrency: true },
+    { name: 'metaRemarketingCpc', label: 'CPC', group: 'meta', subGroup: 'remarketing', isCurrency: true },
+    { name: 'metaRemarketingBounceRate', label: 'Bounce Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true },
+    { name: 'metaRemarketingConversionRate', label: 'Conversion Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true },
     // Google Prospecting
-    { name: 'googleProspectingBudget', label: 'Budget', group: 'google-prospecting', isCurrency: true },
-    { name: 'googleProspectingCpc', label: 'Prospecting CPC', group: 'google-prospecting', isCurrency: true },
-    { name: 'googleProspectingBounceRate', label: 'Prospecting Bounce Rate', group: 'google-prospecting', isPercentage: true },
-    { name: 'googleProspectingConversionRate', label: 'Prospecting Conversion Rate', group: 'google-prospecting', isPercentage: true },
+    { name: 'googleProspectingBudget', label: 'Budget', group: 'google', subGroup: 'prospecting', isCurrency: true },
+    { name: 'googleProspectingCpc', label: 'CPC', group: 'google', subGroup: 'prospecting', isCurrency: true },
+    { name: 'googleProspectingBounceRate', label: 'Bounce Rate', group: 'google', subGroup: 'prospecting', isPercentage: true },
+    { name: 'googleProspectingConversionRate', label: 'Conversion Rate', group: 'google', subGroup: 'prospecting', isPercentage: true },
     // Google Remarketing
-    { name: 'googleRemarketingBudget', label: 'Budget', group: 'google-remarketing', isCurrency: true },
-    { name: 'googleRemarketingCpc', label: 'Remarketing CPC', group: 'google-remarketing', isCurrency: true },
-    { name: 'googleRemarketingBounceRate', label: 'Remarketing Bounce Rate', group: 'google-remarketing', isPercentage: true },
-    { name: 'googleRemarketingConversionRate', label: 'Remarketing Conversion Rate', group: 'google-remarketing', isPercentage: true },
+    { name: 'googleRemarketingBudget', label: 'Budget', group: 'google', subGroup: 'remarketing', isCurrency: true },
+    { name: 'googleRemarketingCpc', label: 'CPC', group: 'google', subGroup: 'remarketing', isCurrency: true },
+    { name: 'googleRemarketingBounceRate', label: 'Bounce Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
+    { name: 'googleRemarketingConversionRate', label: 'Conversion Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
     
-    // General - Organic
-    { name: 'organicSessions', label: 'Organic Sessions', group: 'general-organic' },
-    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'general-organic', isPercentage: true },
+    // Organic
+    { name: 'organicSessions', label: 'Organic Sessions', group: 'organic' },
+    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'organic', isPercentage: true },
     
-    // General - First Purchase
-    { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'general-first-purchase', isCurrency: true },
-    { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'general-first-purchase', isPercentage: true },
+    // First Purchase
+    { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'first-purchase', isCurrency: true },
+    { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'first-purchase', isPercentage: true },
     
-    // General - Repeat Purchase
-    { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'general-repeat-purchase', isCurrency: true },
-    { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'general-repeat-purchase', isPercentage: true },
-    { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'general-repeat-purchase', isPercentage: true },
+    // Repeat Purchase
+    { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'repeat-purchase', isCurrency: true },
+    { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'repeat-purchase', isPercentage: true },
+    { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'repeat-purchase', isPercentage: true },
 
-    // General - OPEX
-    { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'general-opex', isCurrency: true },
+    // OPEX
+    { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'opex', isCurrency: true },
 ];
 
-export const impactableMetrics = inputFields.filter(field => 
+export const impactableMetrics: InputField[] = [
+    // Meta Prospecting
+    { name: 'metaProspectingCpc', label: 'Meta Prospecting CPC', group: 'meta', subGroup: 'prospecting', isCurrency: true },
+    { name: 'metaProspectingBounceRate', label: 'Meta Prospecting Bounce Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true },
+    { name: 'metaProspectingConversionRate', label: 'Meta Prospecting Conversion Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true },
+    // Meta Remarketing
+    { name: 'metaRemarketingCpc', label: 'Meta Remarketing CPC', group: 'meta', subGroup: 'remarketing', isCurrency: true },
+    { name: 'metaRemarketingBounceRate', label: 'Meta Remarketing Bounce Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true },
+    { name: 'metaRemarketingConversionRate', label: 'Meta Remarketing Conversion Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true },
+    // Google Prospecting
+    { name: 'googleProspectingCpc', label: 'Google Prospecting CPC', group: 'google', subGroup: 'prospecting', isCurrency: true },
+    { name: 'googleProspectingBounceRate', label: 'Google Prospecting Bounce Rate', group: 'google', subGroup: 'prospecting', isPercentage: true },
+    { name: 'googleProspectingConversionRate', label: 'Google Prospecting Conversion Rate', group: 'google', subGroup: 'prospecting', isPercentage: true },
+    // Google Remarketing
+    { name: 'googleRemarketingCpc', label: 'Google Remarketing CPC', group: 'google', subGroup: 'remarketing', isCurrency: true },
+    { name: 'googleRemarketingBounceRate', label: 'Google Remarketing Bounce Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
+    { name: 'googleRemarketingConversionRate', label: 'Google Remarketing Conversion Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
+    // Organic
+    { name: 'organicSessions', label: 'Organic Sessions', group: 'organic' },
+    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'organic', isPercentage: true },
+    // First Purchase
+    { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'first-purchase', isCurrency: true },
+    { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'first-purchase', isPercentage: true },
+    // Repeat Purchase
+    { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'repeat-purchase', isPercentage: true },
+    { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'repeat-purchase', isCurrency: true },
+    { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'repeat-purchase', isPercentage: true },
+].filter(field => 
     !field.name.toLowerCase().includes('budget') && 
     field.name !== 'marketingOpexFixed'
 );

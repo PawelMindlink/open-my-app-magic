@@ -44,13 +44,13 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
       for (const key in scenario.impact) {
         const impactKey = key as keyof Inputs;
         const impact = scenario.impact[impactKey];
-        if (impact && impact.value) {
-          const modifier = impact.value[estimateLevel];
+        if (impact && impact.value && impact.value[estimateLevel] !== undefined) {
+          const modifier = impact.value[estimateLevel] as number;
           if (typeof modifier === 'number') {
             if (impact.type === 'percentage') {
               (modifiedInputs[impactKey] as number) *= (1 + modifier / 100);
             } else { // absolute
-              modifiedInputs[impactKey] = modifier;
+              (modifiedInputs[impactKey] as number) = modifier;
             }
           }
         }
@@ -207,10 +207,10 @@ export function ProfitCalculator() {
     new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
   const formatNumber = (value: number) =>
-    new Intl.NumberFormat("en-US").format(Math.round(value));
+    new Intl.NumberFormat("en-US", {useGrouping: true}).format(Math.round(value));
   
   const formatPercentage = (value: number) =>
-    `${new Intl.NumberFormat("en-US").format(parseFloat((value || 0).toFixed(2)))}%`;
+    `${new Intl.NumberFormat("en-US", {useGrouping: true}).format(parseFloat((value || 0).toFixed(2)))}%`;
 
   const renderDelta = (delta: number, format: (val: number) => string, isGood: boolean) => {
     if (Math.abs(delta) < 0.01) return null;
@@ -225,9 +225,9 @@ export function ProfitCalculator() {
     )
   }
 
-  const renderInputGroup = (group: string) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
-        {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
+  const renderInputGroup = (group: string, side: 'prospecting' | 'remarketing') => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        {inputFields.filter(f => f.group === group && f.subGroup === side).map(({ name, label, isCurrency, isPercentage }) => (
           <div key={name} className="flex flex-col space-y-2 justify-end">
             <Label htmlFor={name} className="font-headline h-10 flex items-end">{label}</Label>
             <div className="relative">
@@ -324,14 +324,15 @@ export function ProfitCalculator() {
                     </div>
                   </div>
                   <div className="space-y-6">
-                    <div>
-                        <h5 className="font-semibold text-base mb-3">Prospecting</h5>
-                        {renderInputGroup('meta-prospecting')}
-                    </div>
-                    <Separator/>
-                    <div>
-                        <h5 className="font-semibold text-base mb-3">Remarketing</h5>
-                        {renderInputGroup('meta-remarketing')}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                        <div>
+                            <h5 className="font-semibold text-base mb-3">Prospecting</h5>
+                            {renderInputGroup('meta', 'prospecting')}
+                        </div>
+                        <div>
+                           <h5 className="font-semibold text-base mb-3">Remarketing</h5>
+                           {renderInputGroup('meta', 'remarketing')}
+                        </div>
                     </div>
                   </div>
 
@@ -348,15 +349,16 @@ export function ProfitCalculator() {
                       </div>
                   </div>
                   <div className="space-y-6">
-                      <div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                        <div>
                            <h5 className="font-semibold text-base mb-3">Prospecting</h5>
-                          {renderInputGroup('google-prospecting')}
-                      </div>
-                      <Separator/>
-                      <div>
+                          {renderInputGroup('google', 'prospecting')}
+                        </div>
+                        <div>
                            <h5 className="font-semibold text-base mb-3">Remarketing</h5>
-                          {renderInputGroup('google-remarketing')}
-                      </div>
+                           {renderInputGroup('google', 'remarketing')}
+                        </div>
+                     </div>
                   </div>
               </div>
 
@@ -365,22 +367,22 @@ export function ProfitCalculator() {
                <div className="space-y-6 p-4 border rounded-lg">
                 <div>
                   <h4 className="font-headline text-lg mb-4">Organic</h4>
-                  {renderGeneralInputGroup('general-organic')}
+                  {renderGeneralInputGroup('organic')}
                 </div>
                 <Separator/>
                 <div>
                   <h4 className="font-headline text-lg mb-4">First Purchase</h4>
-                  {renderGeneralInputGroup('general-first-purchase')}
+                  {renderGeneralInputGroup('first-purchase')}
                 </div>
                 <Separator/>
                  <div>
                   <h4 className="font-headline text-lg mb-4">Repeat Purchase</h4>
-                  {renderGeneralInputGroup('general-repeat-purchase')}
+                  {renderGeneralInputGroup('repeat-purchase')}
                 </div>
                  <Separator/>
                  <div>
                   <h4 className="font-headline text-lg mb-4">Fixed Costs</h4>
-                  {renderGeneralInputGroup('general-opex')}
+                  {renderGeneralInputGroup('opex')}
                 </div>
               </div>
             </CardContent>
