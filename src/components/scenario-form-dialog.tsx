@@ -72,7 +72,7 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
     setImpact((prev) => {
         const newMetricImpact = { ...prev[metric], [level]: numValue };
         // If all levels for a metric are undefined, remove the metric from impact
-        if (Object.values(newMetricImpact).every(v => v === undefined || v === 0)) {
+        if (Object.values(newMetricImpact).every(v => v === undefined || v === 0 || v === null)) {
             const newImpact = {...prev};
             delete newImpact[metric];
             return newImpact;
