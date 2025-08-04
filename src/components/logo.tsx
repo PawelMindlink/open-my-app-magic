@@ -15,7 +15,7 @@ export const Logo = ({ className }: { className?: string }) => {
           y="35" 
           dominantBaseline="middle" 
           textAnchor="middle" 
-          fill="hsl(var(--foreground))"
+          fill="white"
           fontFamily="Montserrat, sans-serif"
           fontSize="32"
           fontWeight="bold"

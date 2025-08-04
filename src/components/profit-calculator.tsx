@@ -66,7 +66,9 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
     const googleRemarketingSessions = googleRemarketingCpc > 0 ? googleRemarketingBudget / googleRemarketingCpc : 0;
     
     const totalPaidSessions = metaProspectingSessions + metaRemarketingSessions + googleProspectingSessions + googleRemarketingSessions;
-    const totalAdsBudget = metaProspectingBudget + metaRemarketingBudget + googleProspectingBudget + googleRemarketingBudget;
+    const totalMetaBudget = metaProspectingBudget + metaRemarketingBudget;
+    const totalGoogleBudget = googleProspectingBudget + googleRemarketingBudget;
+    const totalAdsBudget = totalMetaBudget + totalGoogleBudget;
 
     const totalSessions = totalPaidSessions + organicSessions;
     const cpSessionBlended = totalSessions > 0 ? totalAdsBudget / totalSessions : 0;
@@ -109,6 +111,8 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
       marketingProfit, 
       totalMarketingCost, 
       contributionMargin,
+      totalMetaBudget,
+      totalGoogleBudget,
       totalAdsBudget,
       marketingOpexFixed,
       scenarioCosts,
@@ -269,7 +273,13 @@ export function ProfitCalculator() {
                         {renderInputGroup('meta-remarketing')}
                     </div>
                   </div>
+                  <div className="mt-4 flex justify-end font-bold text-lg">
+                    <Label>Total Meta Budget:</Label>
+                    <span className="ml-2">{formatCurrency(results.scenarios.totalMetaBudget)}</span>
+                  </div>
+
                   <Separator className="my-6" />
+                  
                   <h4 className="font-headline text-lg mb-4">Google Ads</h4>
                   <div className="space-y-6">
                       <div>
@@ -280,6 +290,10 @@ export function ProfitCalculator() {
                            <h5 className="font-semibold text-base mb-3">Remarketing</h5>
                           {renderInputGroup('google-remarketing')}
                       </div>
+                  </div>
+                  <div className="mt-4 flex justify-end font-bold text-lg">
+                    <Label>Total Google Budget:</Label>
+                    <span className="ml-2">{formatCurrency(results.scenarios.totalGoogleBudget)}</span>
                   </div>
               </div>
 

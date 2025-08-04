@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,20 +35,22 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
+// This logic is moved outside the component to prevent re-computation on every render.
+const impactableMetrics = inputFields.filter(field => 
+    !field.name.toLowerCase().includes('budget') && 
+    field.name !== 'marketingOpexFixed'
+);
+
 export function ScenarioFormDialog({ children, onSaveScenario, currency, scenario, open, onOpenChange }: ScenarioFormDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState(0);
   const [impact, setImpact] = useState<Partial<Record<keyof Inputs, Impact>>>({});
-  const [errors, setErrors] = useState<{name?: string, description?: string}>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLDivElement>(null);
+
 
   const isEditing = !!scenario;
-
-  const impactableMetrics = useMemo(() => inputFields.filter(field => 
-    !field.name.toLowerCase().includes('budget') && 
-    field.name !== 'marketingOpexFixed'
-  ), []);
-
 
   useEffect(() => {
       if (open && scenario) {
@@ -89,7 +91,7 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
   };
 
   const validate = () => {
-    const newErrors: {name?: string, description?: string} = {};
+    const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = "Scenario name is required.";
     if (!description.trim()) newErrors.description = "Description is required.";
     setErrors(newErrors);
@@ -98,6 +100,11 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
 
   const handleSubmit = () => {
     if (!validate()) {
+        const firstErrorKey = Object.keys(errors)[0];
+        if (firstErrorKey) {
+            const errorElement = formRef.current?.querySelector(`[data-field-key="${firstErrorKey}"]`);
+            errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
     }
     const newScenario = {
@@ -121,13 +128,13 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] p-4 -mx-4">
-            <div className="space-y-6 px-1">
-                <div className="space-y-2">
+            <div className="space-y-6 px-1" ref={formRef}>
+                <div className="space-y-2" data-field-key="name">
                     <Label htmlFor="scenario-name" className="font-headline">Scenario Name *</Label>
                     <Input id="scenario-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Q3 Content Marketing Push" className={cn(errors.name && "border-destructive")} />
                     {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
-                 <div className="space-y-2">
+                 <div className="space-y-2" data-field-key="description">
                     <Label htmlFor="scenario-desc" className="font-headline">Description *</Label>
                     <Textarea id="scenario-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="A brief description of the initiative." className={cn(errors.description && "border-destructive")} />
                      {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
