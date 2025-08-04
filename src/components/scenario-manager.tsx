@@ -110,22 +110,24 @@ export function ScenarioManager({
     globalEstimateLevel,
     onGlobalEstimateLevelChange 
 }: ScenarioManagerProps) {
-  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(() => {
-    const fromStorage = typeof window !== 'undefined' ? localStorage.getItem('scenarios') : null;
-    if (fromStorage) {
-      return JSON.parse(fromStorage);
-    }
-    return initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}));
-  });
+  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(
+    initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}))
+  );
   
   const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
-    onActiveScenariosChange(availableScenarios.filter(s => s.active));
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('scenarios', JSON.stringify(availableScenarios));
+    const fromStorage = localStorage.getItem('scenarios');
+    if (fromStorage) {
+      setAvailableScenarios(JSON.parse(fromStorage));
     }
+  }, []);
+
+
+  useEffect(() => {
+    onActiveScenariosChange(availableScenarios.filter(s => s.active));
+    localStorage.setItem('scenarios', JSON.stringify(availableScenarios));
   }, [availableScenarios, onActiveScenariosChange]);
 
 
