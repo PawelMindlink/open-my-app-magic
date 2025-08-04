@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -19,12 +20,12 @@ import { Inputs, Currency, inputFields } from "@/lib/types";
 import { Scenario, Impact } from "./scenario-manager";
 
 type ScenarioFormDialogProps = {
-  children?: React.ReactNode;
   onSaveScenario: (scenario: Omit<Scenario, "id" | "active" | "estimateLevel" | "isCustom">, id?: string) => void;
   currency: Currency;
   scenario?: Scenario | null;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children?: React.ReactNode;
 };
 
 const currencySymbols: Record<Currency, string> = {
@@ -39,12 +40,7 @@ const impactableMetrics = inputFields.filter(field =>
     field.name !== 'marketingOpexFixed'
 );
 
-export function ScenarioFormDialog({ children, onSaveScenario, currency, scenario, open: controlledOpen, onOpenChange: setControlledOpen }: ScenarioFormDialogProps) {
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  
-  const open = controlledOpen ?? uncontrolledOpen;
-  const setOpen = setControlledOpen ?? setUncontrolledOpen;
-
+export function ScenarioFormDialog({ children, onSaveScenario, currency, scenario, open, onOpenChange }: ScenarioFormDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState(0);
@@ -76,7 +72,7 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
     setImpact((prev) => {
         const newMetricImpact = { ...prev[metric], [level]: numValue };
         // If all levels for a metric are undefined, remove the metric from impact
-        if (Object.values(newMetricImpact).every(v => v === undefined)) {
+        if (Object.values(newMetricImpact).every(v => v === undefined || v === 0)) {
             const newImpact = {...prev};
             delete newImpact[metric];
             return newImpact;
@@ -100,7 +96,7 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
         impact
     };
     onSaveScenario(newScenario, scenario?.id);
-    setOpen(false);
+    onOpenChange(false);
   };
   
   const dialogContent = (
@@ -177,20 +173,11 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
             </div>
         </ScrollArea>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button type="submit" onClick={handleSubmit}>{isEditing ? "Save Changes" : "Add Scenario"}</Button>
         </DialogFooter>
     </DialogContent>
   );
 
-  if (children) {
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            {dialogContent}
-        </Dialog>
-    )
-  }
-
-  return <Dialog open={open} onOpenChange={setOpen}>{dialogContent}</Dialog>;
+  return <Dialog open={open} onOpenChange={onOpenChange}>{children}{dialogContent}</Dialog>;
 }

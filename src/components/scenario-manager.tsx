@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -18,6 +19,18 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "./ui/separator";
 import { Inputs, Currency, inputFields } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 export type EstimateLevel = 'pessimistic' | 'realistic' | 'optimistic';
 
@@ -103,6 +116,7 @@ export function ScenarioManager({
   );
   
   const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     onActiveScenariosChange(availableScenarios.filter(s => s.active));
@@ -119,7 +133,13 @@ export function ScenarioManager({
         setAvailableScenarios(prev => [...prev, scenarioWithMeta]);
     }
     setEditingScenario(null);
+    setIsFormOpen(false);
   };
+  
+  const handleEditClick = (scenario: Scenario) => {
+      setEditingScenario(scenario);
+      setIsFormOpen(true);
+  }
 
   const handleDeleteScenario = (scenarioId: string) => {
     setAvailableScenarios(prev => prev.filter(s => s.id !== scenarioId));
@@ -153,8 +173,11 @@ export function ScenarioManager({
   return (
     <>
     <ScenarioFormDialog 
-        open={!!editingScenario} 
-        onOpenChange={(isOpen) => !isOpen && setEditingScenario(null)}
+        open={isFormOpen} 
+        onOpenChange={(isOpen) => {
+            setIsFormOpen(isOpen);
+            if (!isOpen) setEditingScenario(null);
+        }}
         onSaveScenario={handleSaveScenario}
         currency={currency}
         scenario={editingScenario}
@@ -168,12 +191,10 @@ export function ScenarioManager({
             Select different "what-if" scenarios to see their layered impact on your profitability.
             </CardDescription>
         </div>
-        <ScenarioFormDialog onSaveScenario={handleSaveScenario} currency={currency}>
-            <Button>
-                <PlusCircle className="mr-2" />
-                Add Scenario
-            </Button>
-        </ScenarioFormDialog>
+        <Button onClick={() => { setEditingScenario(null); setIsFormOpen(true); }}>
+            <PlusCircle className="mr-2" />
+            Add Scenario
+        </Button>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="p-4 border rounded-lg bg-card-foreground/5">
@@ -214,13 +235,29 @@ export function ScenarioManager({
                             <p className="text-sm text-muted-foreground">{scenario.description}</p>
                         </div>
                         <div className="flex items-center gap-1">
-                           <Button variant="ghost" size="icon" onClick={() => setEditingScenario(scenario)}>
+                           <Button variant="ghost" size="icon" onClick={() => handleEditClick(scenario)}>
                                <Pencil className="w-4 h-4 text-muted-foreground" />
                            </Button>
                            {scenario.isCustom && (
-                             <Button variant="ghost" size="icon" onClick={() => handleDeleteScenario(scenario.id)}>
-                                 <Trash2 className="w-4 h-4 text-destructive" />
-                             </Button>
+                             <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                 <Button variant="ghost" size="icon">
+                                   <Trash2 className="w-4 h-4 text-destructive" />
+                                 </Button>
+                               </AlertDialogTrigger>
+                               <AlertDialogContent>
+                                 <AlertDialogHeader>
+                                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                   <AlertDialogDescription>
+                                     This will permanently delete the "{scenario.name}" scenario. This action cannot be undone.
+                                   </AlertDialogDescription>
+                                 </AlertDialogHeader>
+                                 <AlertDialogFooter>
+                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                   <AlertDialogAction onClick={() => handleDeleteScenario(scenario.id)}>Delete</AlertDialogAction>
+                                 </AlertDialogFooter>
+                               </AlertDialogContent>
+                             </AlertDialog>
                            )}
                            <Switch
                                 id={scenario.id}

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, ArrowUp, ArrowDown } from "lucide-react";
 import { Inputs, Currency, inputFields } from "@/lib/types";
 
 
@@ -31,48 +32,9 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
-export function ProfitCalculator() {
-  const [inputs, setInputs] = useState<Inputs>({
-    metaProspectingBudget: 3000,
-    metaProspectingCpc: 1.0,
-    metaProspectingConversionRate: 1.5,
-    metaRemarketingBudget: 2000,
-    metaRemarketingCpc: 0.6,
-    metaRemarketingConversionRate: 4,
-
-    googleProspectingBudget: 3000,
-    googleProspectingCpc: 1.5,
-    googleProspectingConversionRate: 2,
-    googleRemarketingBudget: 2000,
-    googleRemarketingCpc: 0.9,
-    googleRemarketingConversionRate: 5,
-
-    organicSessions: 15000,
-    crFirstPurchase: 1.5,
-    aovFirstPurchase: 120,
-    gmFirstPurchase: 60,
-    crRepeatPurchase: 20,
-    aovRepeatPurchase: 80,
-    gmRepeatPurchase: 70,
-    marketingOpexFixed: 5000,
-  });
-
-  const [activeScenarios, setActiveScenarios] = useState<Scenario[]>([]);
-  const [globalEstimateLevel, setGlobalEstimateLevel] = useState<EstimateLevel | 'individual'>('realistic');
-  const [currency, setCurrency] = useState<Currency>("USD");
-
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setInputs((prev) => ({
-      ...prev,
-      [name]: value === "" ? 0 : parseFloat(value),
-    }));
-  };
-
-  const results = useMemo(() => {
+const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [], globalEstimateLevel: EstimateLevel | 'individual' = 'realistic') => {
     // Apply scenario modifiers
-    const modifiedInputs = { ...inputs };
+    const modifiedInputs = { ...currentInputs };
     let scenarioCosts = 0;
 
     activeScenarios.forEach(scenario => {
@@ -114,7 +76,6 @@ export function ProfitCalculator() {
     const organicPurchases = organicSessions * (crFirstPurchase / 100);
     
     const totalFirstPurchases = prospectingPurchases + organicPurchases;
-    const allPurchases = totalFirstPurchases + remarketingPurchases;
 
     const revenueFirstPurchase = totalFirstPurchases * aovFirstPurchase;
     const grossProfitFirstPurchase = revenueFirstPurchase * (gmFirstPurchase / 100);
@@ -130,11 +91,74 @@ export function ProfitCalculator() {
     const totalGrossProfit = grossProfitFirstPurchase + grossProfitRepeatPurchase;
     const contributionMargin = totalGrossProfit - totalAdsBudget;
     const totalMarketingCost = totalAdsBudget + marketingOpexFixed;
-    const netProfit = totalGrossProfit - totalMarketingCost;
-    const roi = totalMarketingCost > 0 ? (netProfit / totalMarketingCost) * 100 : 0;
+    const marketingProfit = totalGrossProfit - totalMarketingCost;
+
+    return { 
+      totalSessions, 
+      cpSessionBlended, 
+      totalGrossProfit, 
+      marketingProfit, 
+      totalMarketingCost, 
+      contributionMargin,
+      totalAdsBudget,
+      scenarioCosts
+    };
+}
 
 
-    return { totalSessions, cpSessionBlended, totalGrossProfit, netProfit, totalMarketingCost, contributionMargin, roi };
+export function ProfitCalculator() {
+  const [inputs, setInputs] = useState<Inputs>({
+    metaProspectingBudget: 3000,
+    metaProspectingCpc: 1.0,
+    metaProspectingConversionRate: 1.5,
+    metaRemarketingBudget: 2000,
+    metaRemarketingCpc: 0.6,
+    metaRemarketingConversionRate: 4,
+
+    googleProspectingBudget: 3000,
+    googleProspectingCpc: 1.5,
+    googleProspectingConversionRate: 2,
+    googleRemarketingBudget: 2000,
+    googleRemarketingCpc: 0.9,
+    googleRemarketingConversionRate: 5,
+
+    organicSessions: 15000,
+    crFirstPurchase: 1.5,
+    aovFirstPurchase: 120,
+    gmFirstPurchase: 60,
+    crRepeatPurchase: 20,
+    aovRepeatPurchase: 80,
+    gmRepeatPurchase: 70,
+    marketingOpexFixed: 5000,
+  });
+
+  const [activeScenarios, setActiveScenarios] = useState<Scenario[]>([]);
+  const [globalEstimateLevel, setGlobalEstimateLevel] = useState<EstimateLevel | 'individual'>('realistic');
+  const [currency, setCurrency] = useState<Currency>("USD");
+
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setInputs((prev) => ({
+      ...prev,
+      [name]: value === "" ? 0 : parseFloat(value),
+    }));
+  };
+
+  const results = useMemo(() => {
+    const baseResults = calculateMetrics(inputs);
+    const scenarioResults = calculateMetrics(inputs, activeScenarios, globalEstimateLevel);
+
+    const contributionMarginDelta = scenarioResults.contributionMargin - baseResults.contributionMargin;
+    const roi = scenarioResults.scenarioCosts > 0 ? (contributionMarginDelta / scenarioResults.scenarioCosts) * 100 : 0;
+    
+    return {
+      base: baseResults,
+      scenarios: scenarioResults,
+      roi,
+      contributionMarginDelta
+    }
+
   }, [inputs, activeScenarios, globalEstimateLevel]);
 
   const formatCurrency = (value: number) =>
@@ -146,16 +170,18 @@ export function ProfitCalculator() {
   const formatPercentage = (value: number) =>
     `${value.toFixed(2)}%`;
 
-
-  const resultMetrics: { key: keyof typeof results, label: string, format: (val: number) => string, tooltip: string }[] = [
-    { key: "netProfit", label: "Net Profit", format: formatCurrency, tooltip: "Total Gross Profit - Total Marketing Cost" },
-    { key: "roi", label: "Return on Investment (ROI)", format: formatPercentage, tooltip: "(Net Profit / Total Marketing Cost) * 100" },
-    { key: "contributionMargin", label: "Contribution Margin", format: formatCurrency, tooltip: "Total Gross Profit - Total Ads Budget" },
-    { key: "totalGrossProfit", label: "Total Gross Profit", format: formatCurrency, tooltip: "Gross Profit from First Purchases + Gross Profit from Repeat Purchases" },
-    { key: "totalMarketingCost", label: "Total Marketing Cost", format: formatCurrency, tooltip: "Total Ads Budget + Fixed Marketing OPEX + Scenario Costs" },
-    { key: "cpSessionBlended", label: "Blended Cost Per Session", format: formatCurrency, tooltip: "Total Ads Budget / Total Sessions (Paid + Organic)" },
-    { key: "totalSessions", label: "Total Sessions", format: formatNumber, tooltip: "Total Paid Sessions (from all ad channels) + Organic Sessions" },
-  ];
+  const renderDelta = (delta: number, format: (val: number) => string, isGood: boolean) => {
+    if (Math.abs(delta) < 0.01) return null;
+    const isPositive = delta > 0;
+    const colorClass = (isPositive && isGood) || (!isPositive && !isGood) ? 'text-green-500' : 'text-destructive';
+    const Icon = isPositive ? ArrowUp : ArrowDown;
+    return (
+      <span className={cn("flex items-center text-sm font-semibold ml-2", colorClass)}>
+        <Icon className="w-4 h-4 mr-1" />
+        {format(delta)}
+      </span>
+    )
+  }
 
   const renderInputGroup = (group: (typeof inputFields)[number]['group']) => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
@@ -189,7 +215,7 @@ export function ProfitCalculator() {
   )
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={0}>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-3 space-y-8">
           <Card className="shadow-lg">
@@ -284,31 +310,143 @@ export function ProfitCalculator() {
             <CardDescription>Your financial forecast based on the inputs and active scenarios.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {resultMetrics.map(({ key, label, format, tooltip }, index) => (
-              <React.Fragment key={key}>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <p className="text-muted-foreground">{label}</p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{tooltip}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <p className={cn(
-                    "font-headline text-xl font-bold transition-colors duration-300",
-                    key === 'netProfit' && (results.netProfit < 0 ? 'text-destructive' : 'text-green-500'),
-                    key === 'roi' && (results.roi < 0 ? 'text-destructive' : 'text-green-500'),
-                  )}>
-                    {format(results[key as keyof typeof results])}
-                  </p>
+            {/* Marketing Profit */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <p className="text-muted-foreground">Marketing Profit</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total Gross Profit - Total Marketing Cost</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-                {index < resultMetrics.length - 1 && <Separator />}
-              </React.Fragment>
-            ))}
+                <div className="flex items-center">
+                    <p className={cn(
+                        "font-headline text-xl font-bold transition-colors duration-300",
+                        results.scenarios.marketingProfit < 0 ? 'text-destructive' : 'text-green-500'
+                    )}>
+                        {formatCurrency(results.scenarios.marketingProfit)}
+                    </p>
+                    {renderDelta(results.scenarios.marketingProfit - results.base.marketingProfit, formatCurrency, true)}
+                </div>
+            </div>
+            <Separator />
+            
+             {/* Added by Scenarios */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <p className="text-muted-foreground">Added by Scenarios</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>The additional Contribution Margin generated by the active scenarios.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className={cn(
+                    "font-headline text-xl font-bold transition-colors duration-300",
+                    results.contributionMarginDelta < 0 ? 'text-destructive' : 'text-green-500'
+                )}>
+                    {formatCurrency(results.contributionMarginDelta)}
+                </p>
+            </div>
+            <Separator />
+
+            {/* ROI */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <p className="text-muted-foreground">Scenarios ROI</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>(Added Contribution Margin / Total Scenario Cost) * 100. This shows the return specifically on your scenario investments.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                 <p className={cn(
+                    "font-headline text-xl font-bold transition-colors duration-300",
+                    results.roi < 0 ? 'text-destructive' : 'text-green-500'
+                )}>
+                    {formatPercentage(results.roi)}
+                </p>
+            </div>
+            <Separator />
+
+            {/* Money Invested */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <p className="text-muted-foreground">Total Marketing Cost</p>
+                   <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                       <p>Total Ads Budget + Fixed Marketing OPEX + Scenario Costs</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex items-center">
+                    <p className="font-headline text-xl font-bold">
+                        {formatCurrency(results.scenarios.totalMarketingCost)}
+                    </p>
+                    {renderDelta(results.scenarios.totalMarketingCost - results.base.totalMarketingCost, formatCurrency, false)}
+                </div>
+            </div>
+             <div className="pl-6 text-sm text-muted-foreground space-y-1">
+                <div className="flex justify-between"><span>Ads Budget</span><span>{formatCurrency(results.scenarios.totalAdsBudget)}</span></div>
+                <div className="flex justify-between"><span>OPEX + Scenarios</span><span>{formatCurrency(results.scenarios.marketingOpexFixed)}</span></div>
+            </div>
+            <Separator />
+
+            {/* Blended Cost Per Session */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <p className="text-muted-foreground">Blended Cost Per Session</p>
+                   <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                       <p>Total Ads Budget / Total Sessions (Paid + Organic)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex items-center">
+                    <p className="font-headline text-xl font-bold">
+                        {formatCurrency(results.scenarios.cpSessionBlended)}
+                    </p>
+                     {renderDelta(results.scenarios.cpSessionBlended - results.base.cpSessionBlended, formatCurrency, false)}
+                </div>
+            </div>
+            <Separator />
+
+             {/* Total Sessions */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <p className="text-muted-foreground">Total Sessions</p>
+                   <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total Paid Sessions (from all ad channels) + Organic Sessions</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                 <div className="flex items-center">
+                    <p className="font-headline text-xl font-bold">
+                        {formatNumber(results.scenarios.totalSessions)}
+                    </p>
+                     {renderDelta(results.scenarios.totalSessions - results.base.totalSessions, formatNumber, true)}
+                </div>
+            </div>
           </CardContent>
         </Card>
       </div>
