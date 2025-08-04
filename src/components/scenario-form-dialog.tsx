@@ -40,7 +40,7 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState(0);
   const [impact, setImpact] = useState<Partial<Record<keyof Inputs, Impact>>>({});
-  const [errors, setErrors] = useState<{name?: boolean, description?: boolean}>({});
+  const [errors, setErrors] = useState<{name?: string, description?: string}>({});
 
   const isEditing = !!scenario;
 
@@ -89,9 +89,9 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
   };
 
   const validate = () => {
-    const newErrors: {name?: boolean, description?: boolean} = {};
-    if (!name.trim()) newErrors.name = true;
-    if (!description.trim()) newErrors.description = true;
+    const newErrors: {name?: string, description?: string} = {};
+    if (!name.trim()) newErrors.name = "Scenario name is required.";
+    if (!description.trim()) newErrors.description = "Description is required.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -125,10 +125,12 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
                 <div className="space-y-2">
                     <Label htmlFor="scenario-name" className="font-headline">Scenario Name *</Label>
                     <Input id="scenario-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Q3 Content Marketing Push" className={cn(errors.name && "border-destructive")} />
+                    {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="scenario-desc" className="font-headline">Description *</Label>
                     <Textarea id="scenario-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="A brief description of the initiative." className={cn(errors.description && "border-destructive")} />
+                     {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="scenario-cost" className="font-headline">Total Investment Cost</Label>
