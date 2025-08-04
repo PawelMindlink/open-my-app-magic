@@ -78,10 +78,16 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
     const [searchTerm, setSearchTerm] = useState("");
     
     const metricGroups = useMemo(() => {
-        const groups: Record<string, { prospecting: InputField[], remarketing: InputField[], general: InputField[] }> = {
-            "Meta Ads": { prospecting: [], remarketing: [], general: [] },
-            "Google Ads": { prospecting: [], remarketing: [], general: [] },
-            "General": { prospecting: [], remarketing: [], general: [] },
+        type MetricGroup = {
+            prospecting: InputField[];
+            remarketing: InputField[];
+            items: InputField[];
+        }
+        const groups: Record<string, MetricGroup> = {
+            "Meta Ads": { prospecting: [], remarketing: [], items: [] },
+            "Google Ads": { prospecting: [], remarketing: [], items: [] },
+            "Organic": { prospecting: [], remarketing: [], items: [] },
+            "General Purchase Metrics": { prospecting: [], remarketing: [], items: [] },
         };
 
         const filteredMetrics = impactableMetrics.filter(m => 
@@ -89,24 +95,26 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
         );
 
         filteredMetrics.forEach(m => {
-            const groupKey = m.group.startsWith('meta') ? "Meta Ads" : m.group.startsWith('google') ? "Google Ads" : "General";
-            if (m.label.toLowerCase().includes('prospecting')) {
-                groups[groupKey].prospecting.push(m);
-            } else if (m.label.toLowerCase().includes('remarketing')) {
-                groups[groupKey].remarketing.push(m);
+            if (m.group.startsWith('meta')) {
+                 if (m.label.toLowerCase().includes('prospecting')) {
+                    groups["Meta Ads"].prospecting.push(m);
+                } else if (m.label.toLowerCase().includes('remarketing')) {
+                    groups["Meta Ads"].remarketing.push(m);
+                }
+            } else if (m.group.startsWith('google')) {
+                 if (m.label.toLowerCase().includes('prospecting')) {
+                    groups["Google Ads"].prospecting.push(m);
+                } else if (m.label.toLowerCase().includes('remarketing')) {
+                    groups["Google Ads"].remarketing.push(m);
+                }
+            } else if (m.group === 'general-organic') {
+                groups["Organic"].items.push(m);
             } else {
-                groups[groupKey].general.push(m);
+                 groups["General Purchase Metrics"].items.push(m);
             }
         });
         
-        // Ensure consistent order
-        for (const key in groups) {
-            const group = groups[key as keyof typeof groups];
-            group.prospecting.sort((a,b) => a.label.localeCompare(b.label));
-            group.remarketing.sort((a,b) => a.label.localeCompare(b.label));
-        }
-
-        return Object.entries(groups).filter(([, metrics]) => metrics.prospecting.length > 0 || metrics.remarketing.length > 0 || metrics.general.length > 0);
+        return Object.entries(groups).filter(([, metrics]) => metrics.prospecting.length > 0 || metrics.remarketing.length > 0 || metrics.items.length > 0);
     }, [searchTerm]);
 
     const renderMetricCheckbox = (metric: InputField) => (
@@ -131,7 +139,7 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
                 onChange={e => setSearchTerm(e.target.value)}
             />
             {errors.metrics && <p className="text-sm text-destructive mt-1">{errors.metrics}</p>}
-            <Accordion type="multiple" defaultValue={["Meta Ads", "Google Ads", "General"]} className="w-full">
+            <Accordion type="multiple" defaultValue={["Meta Ads", "Google Ads", "Organic", "General Purchase Metrics"]} className="w-full">
                 {metricGroups.map(([groupName, metrics]) => (
                      <AccordionItem value={groupName} key={groupName}>
                         <AccordionTrigger>{groupName}</AccordionTrigger>
@@ -139,7 +147,7 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
                                 <div>
                                     {metrics.prospecting.map(renderMetricCheckbox)}
-                                    {metrics.general.map(renderMetricCheckbox)}
+                                    {metrics.items.map(renderMetricCheckbox)}
                                 </div>
                                 <div>
                                     {metrics.remarketing.map(renderMetricCheckbox)}
@@ -156,76 +164,80 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
 Step2.displayName = "Step2";
 
 
-const Step3 = memo(({ selectedMetrics, impact, setImpact, currency, currentInputs }: any) => {
-
-    const ImpactInput = ({ metric }: { metric: InputField }) => {
-        const metricImpact = impact[metric.name] ?? { type: 'percentage', value: {} };
-        const currentVal = currentInputs[metric.name];
-        const [focusedInput, setFocusedInput] = useState<keyof Impact['value'] | null>(null);
-        
-        const getPlaceholder = (level: keyof Impact['value']) => {
-            if (metricImpact.type === 'absolute') {
-                return currentVal.toString();
-            }
-            return "0";
+const ImpactInput = memo(({ metric, impact, setImpact, currency, currentInputs }: { metric: InputField, impact: Impact, setImpact: any, currency: Currency, currentInputs: Inputs }) => {
+    const metricImpact = impact ?? { type: 'percentage', value: {} };
+    const currentVal = currentInputs[metric.name];
+    const [focusedInput, setFocusedInput] = useState<keyof Impact['value'] | null>(null);
+    
+    const getPlaceholder = (level: keyof Impact['value']) => {
+        if (metricImpact.type === 'absolute') {
+            return currentVal.toString();
         }
-  
-        const getSuffix = () => {
-            if (metric.isCurrency && metricImpact.type === 'absolute') return currencySymbols[currency];
-            if (metric.isPercentage || metricImpact.type === 'percentage') return "%";
-            return "";
-        }
+        return "0";
+    }
 
-        const handleFocus = (level: keyof Impact['value']) => {
-            setFocusedInput(level);
-        }
+    const getSuffix = () => {
+        if (metric.isCurrency && metricImpact.type === 'absolute') return currencySymbols[currency];
+        if (metric.isPercentage || metricImpact.type === 'percentage') return "%";
+        return "";
+    }
 
-        const handleBlur = () => {
-            setFocusedInput(null);
-        }
+    const handleFocus = (level: keyof Impact['value']) => {
+        setFocusedInput(level);
+    }
 
-        const handleImpactChange = (field: keyof Impact['value'], value: string) => {
-            const numValue = value === "" ? undefined : parseFloat(value);
-            setImpact((prev: any) => ({
-                ...prev,
-                [metric.name]: {
-                    ...prev[metric.name],
-                    value: {
-                        ...prev[metric.name].value,
-                        [field]: numValue
-                    }
+    const handleBlur = () => {
+        setFocusedInput(null);
+    }
+
+    const handleImpactChange = (field: keyof Impact['value'], value: string) => {
+        const numValue = value === "" ? undefined : parseFloat(value);
+        setImpact((prev: any) => ({
+            ...prev,
+            [metric.name]: {
+                ...prev[metric.name],
+                value: {
+                    ...(prev[metric.name]?.value ?? {}),
+                    [field]: numValue
                 }
-            }));
+            }
+        }));
+    }
+    
+    const handleTypeChange = (v: ImpactType) => {
+        setImpact((prev: any) => ({...prev, [metric.name]: {...(prev[metric.name] ?? {value: {}}), type: v}}))
+    }
+
+    useEffect(() => {
+        if (!focusedInput) return;
+
+        const sourceValue = metricImpact.value?.[focusedInput];
+        if (sourceValue === undefined) return;
+        
+        let realistic, pessimistic, optimistic;
+
+        switch(focusedInput) {
+            case 'realistic':
+                realistic = sourceValue;
+                pessimistic = realistic * 0.75;
+                optimistic = realistic * 1.25;
+                break;
+            case 'pessimistic':
+                pessimistic = sourceValue;
+                realistic = pessimistic / 0.75;
+                optimistic = realistic * 1.25;
+                break;
+            case 'optimistic':
+                optimistic = sourceValue;
+                realistic = optimistic / 1.25;
+                pessimistic = realistic * 0.75;
+                break;
         }
 
-        useEffect(() => {
-            if (!focusedInput) return;
-            const sourceValue = metricImpact.value[focusedInput];
-            if (sourceValue === undefined) return;
-            
-            let realistic, pessimistic, optimistic;
+        const format = (val: number) => parseFloat(val.toFixed(2));
 
-            switch(focusedInput) {
-                case 'realistic':
-                    realistic = sourceValue;
-                    pessimistic = realistic * 0.75;
-                    optimistic = realistic * 1.25;
-                    break;
-                case 'pessimistic':
-                    pessimistic = sourceValue;
-                    realistic = pessimistic / 0.75;
-                    optimistic = realistic * 1.25;
-                    break;
-                case 'optimistic':
-                    optimistic = sourceValue;
-                    realistic = optimistic / 1.25;
-                    pessimistic = realistic * 0.75;
-                    break;
-            }
-
-            const format = (val: number) => parseFloat(val.toFixed(2));
-
-            setImpact((prev: any) => ({
+        setImpact((prev: any) => {
+             const newImpact = {
                 ...prev,
                 [metric.name]: {
                     ...prev[metric.name],
@@ -235,88 +247,99 @@ const Step3 = memo(({ selectedMetrics, impact, setImpact, currency, currentInput
                         optimistic: focusedInput === 'optimistic' ? optimistic : format(optimistic),
                     }
                 }
-            }));
+            };
+            return newImpact;
+        });
 
-        }, [metricImpact.value[focusedInput ?? 'realistic']]);
-  
-        return (
-          <div className="p-4 border rounded-md">
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                  <Label className="font-semibold">{metric.label}</Label>
-                  <p className="text-xs text-muted-foreground">Current Value: {currentVal}{metric.isPercentage ? '%' : ''}</p>
-                </div>
-                <RadioGroup
-                  value={metricImpact.type}
-                  onValueChange={(v) => setImpact((prev: any) => ({...prev, [metric.name]: {...prev[metric.name], type: v as ImpactType}}))}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="percentage" id={`${metric.name}-percentage`} />
-                    <Label htmlFor={`${metric.name}-percentage`}>% Change</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="absolute" id={`${metric.name}-absolute`} />
-                    <Label htmlFor={`${metric.name}-absolute`}>Absolute</Label>
-                  </div>
-                </RadioGroup>
+    }, [metricImpact.value?.[focusedInput ?? 'realistic']]);
+
+    return (
+      <div className="p-4 border rounded-md">
+        <div className="flex justify-between items-center mb-4">
+            <div>
+              <Label className="font-semibold">{metric.label}</Label>
+              <p className="text-xs text-muted-foreground">Current Value: {currentVal}{metric.isPercentage ? '%' : ''}</p>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label htmlFor={`${metric.name}-pessimistic`} className="text-xs text-muted-foreground">Pessimistic</Label>
-                <div className="relative">
-                  <Input id={`${metric.name}-pessimistic`} type="number" placeholder={getPlaceholder('pessimistic')}
-                    value={metricImpact.value?.pessimistic ?? ''}
-                    onChange={e => handleImpactChange('pessimistic', e.target.value)}
-                    onFocus={() => handleFocus('pessimistic')}
-                    onBlur={handleBlur}
-                    className="pr-8"
-                  />
-                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor={`${metric.name}-realistic`} className="text-xs text-muted-foreground">Realistic</Label>
-                <div className="relative">
-                  <Input id={`${metric.name}-realistic`} type="number" placeholder={getPlaceholder('realistic')}
-                    value={metricImpact.value?.realistic ?? ''}
-                    onChange={e => handleImpactChange('realistic', e.target.value)}
-                    onFocus={() => handleFocus('realistic')}
-                    onBlur={handleBlur}
-                    className="pr-8"
-                  />
-                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor={`${metric.name}-optimistic`} className="text-xs text-muted-foreground">Optimistic</Label>
-                <div className="relative">
-                  <Input id={`${metric.name}-optimistic`} type="number" placeholder={getPlaceholder('optimistic')}
-                    value={metricImpact.value?.optimistic ?? ''}
-                    onChange={e => handleImpactChange('optimistic', e.target.value)}
-                    onFocus={() => handleFocus('optimistic')}
-                    onBlur={handleBlur}
-                    className="pr-8"
-                  />
-                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
-                </div>
-              </div>
+            <RadioGroup
+              value={metricImpact.type}
+              onValueChange={handleTypeChange}
+              className="flex gap-4"
+            >
+              <Label htmlFor={`${metric.name}-percentage`} className="flex items-center space-x-2 cursor-pointer">
+                <RadioGroupItem value="percentage" id={`${metric.name}-percentage`} />
+                <span>% Change</span>
+              </Label>
+              <Label htmlFor={`${metric.name}-absolute`} className="flex items-center space-x-2 cursor-pointer">
+                <RadioGroupItem value="absolute" id={`${metric.name}-absolute`} />
+                <span>Absolute</span>
+              </Label>
+            </RadioGroup>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <Label htmlFor={`${metric.name}-pessimistic`} className="text-xs text-muted-foreground">Pessimistic</Label>
+            <div className="relative">
+              <Input id={`${metric.name}-pessimistic`} type="number" placeholder={getPlaceholder('pessimistic')}
+                value={metricImpact.value?.pessimistic ?? ''}
+                onChange={e => handleImpactChange('pessimistic', e.target.value)}
+                onFocus={() => handleFocus('pessimistic')}
+                onBlur={handleBlur}
+                className="pr-8"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
             </div>
           </div>
-        );
-    }
+          <div>
+            <Label htmlFor={`${metric.name}-realistic`} className="text-xs text-muted-foreground">Realistic</Label>
+            <div className="relative">
+              <Input id={`${metric.name}-realistic`} type="number" placeholder={getPlaceholder('realistic')}
+                value={metricImpact.value?.realistic ?? ''}
+                onChange={e => handleImpactChange('realistic', e.target.value)}
+                onFocus={() => handleFocus('realistic')}
+                onBlur={handleBlur}
+                className="pr-8"
+              />
+               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor={`${metric.name}-optimistic`} className="text-xs text-muted-foreground">Optimistic</Label>
+            <div className="relative">
+              <Input id={`${metric.name}-optimistic`} type="number" placeholder={getPlaceholder('optimistic')}
+                value={metricImpact.value?.optimistic ?? ''}
+                onChange={e => handleImpactChange('optimistic', e.target.value)}
+                onFocus={() => handleFocus('optimistic')}
+                onBlur={handleBlur}
+                className="pr-8"
+              />
+               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+});
+ImpactInput.displayName = "ImpactInput";
 
+
+const Step3 = ({ selectedMetrics, impact, setImpact, currency, currentInputs }: any) => {
     return (
         <div className="space-y-4 px-1">
           {impactableMetrics
             .filter(m => selectedMetrics[m.name])
             .map(metric => (
-              <ImpactInput key={metric.name} metric={metric} />
+              <ImpactInput 
+                key={metric.name} 
+                metric={metric} 
+                impact={impact[metric.name]} 
+                setImpact={setImpact} 
+                currency={currency}
+                currentInputs={currentInputs}
+              />
             ))}
         </div>
       );
-});
-Step3.displayName = "Step3";
+};
 
 
 export function ScenarioFormDialog({
@@ -357,7 +380,7 @@ export function ScenarioFormDialog({
       setDescription(scenario.description);
       setCost(scenario.cost);
       setImpact(scenario.impact);
-      const scenarioSelectedMetrics = { ...selectedMetrics };
+      const scenarioSelectedMetrics = impactableMetrics.reduce((acc, m) => ({ ...acc, [m.name]: false }), {} as Record<keyof Inputs, boolean>);
       for (const key in scenario.impact) {
         scenarioSelectedMetrics[key as keyof Inputs] = true;
       }
