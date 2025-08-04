@@ -325,7 +325,7 @@ export function ScenarioManager({
                         <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Impacts</Label>
                         <div className="flex flex-wrap gap-2 pt-1">
                             {Object.entries(scenario.impact).map(([key, impact]) => {
-                                if (!impact) return null;
+                                if (!impact || !impact.value) return null;
                                 const impactValue = impact.value[currentEstimateLevel];
                                 const metric = impactableMetrics.find(m => m.name === key);
                                 if (impactValue === undefined || impactValue === 0 || !metric) return null;
@@ -367,5 +367,3 @@ export function ScenarioManager({
     </>
   );
 }
-
-    
