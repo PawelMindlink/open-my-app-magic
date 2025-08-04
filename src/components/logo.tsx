@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils";
 import React from "react";
 
@@ -14,7 +15,7 @@ export const Logo = ({ className }: { className?: string }) => {
           y="35" 
           dominantBaseline="middle" 
           textAnchor="middle" 
-          fill="white"
+          fill="#FFFFFF"
           fontFamily="Montserrat, sans-serif"
           fontSize="32"
           fontWeight="bold"

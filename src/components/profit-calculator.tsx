@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -14,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { ScenarioManager, Scenario, EstimateLevel } from "@/components/scenario-manager";
+import { ScenarioManager, Scenario } from "@/components/scenario-manager";
 import {
   Select,
   SelectContent,
@@ -24,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HelpCircle, ArrowUp, ArrowDown } from "lucide-react";
-import { Inputs, Currency, inputFields } from "@/lib/types";
+import { Inputs, Currency, inputFields, EstimateLevel } from "@/lib/types";
 
 
 const currencySymbols: Record<Currency, string> = {
@@ -79,17 +78,15 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
 
     const totalSessions = totalPaidSessions + organicSessions;
     const cpSessionBlended = totalSessions > 0 ? totalAdsBudget / totalSessions : 0;
-
+    
     const prospectingPurchases = (metaProspectingSessions * (metaProspectingConversionRate / 100)) + (googleProspectingSessions * (googleProspectingConversionRate / 100));
     const remarketingPurchases = (metaRemarketingSessions * (metaRemarketingConversionRate / 100)) + (googleRemarketingSessions * (googleRemarketingConversionRate / 100));
     const organicFirstPurchases = organicSessions * (crFirstPurchase / 100);
-    
     const totalFirstPurchases = prospectingPurchases + organicFirstPurchases;
 
     const revenueFirstPurchase = totalFirstPurchases * aovFirstPurchase;
     const grossProfitFirstPurchase = revenueFirstPurchase * (gmFirstPurchase / 100);
 
-    // Assumption: remarketing purchases are repeat purchases.
     const repeatCustomersFromAds = remarketingPurchases;
     const repeatCustomersFromPrevious = totalFirstPurchases * (crRepeatPurchase / 100);
     const totalRepeatPurchases = repeatCustomersFromAds + repeatCustomersFromPrevious;
@@ -102,11 +99,17 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
     const totalMarketingCost = totalAdsBudget + marketingOpexFixed;
     const marketingProfit = totalGrossProfit - totalMarketingCost;
 
-    const blendedAov = (revenueFirstPurchase + revenueRepeatPurchase) / (totalFirstPurchases + totalRepeatPurchases || 1);
-    const blendedCr = ((totalFirstPurchases + totalRepeatPurchases) / totalSessions || 0) * 100;
-
-    const firstPurchaseCr = ((prospectingPurchases + organicFirstPurchases) / (metaProspectingSessions + googleProspectingSessions + organicSessions) || 0) * 100;
-    const repeatPurchaseCr = ((remarketingPurchases + repeatCustomersFromPrevious) / (metaRemarketingSessions + totalFirstPurchases) || 0) * 100;
+    const totalPurchases = totalFirstPurchases + totalRepeatPurchases;
+    const totalRevenue = revenueFirstPurchase + revenueRepeatPurchase;
+    const blendedAov = totalPurchases > 0 ? totalRevenue / totalPurchases : 0;
+    const blendedCr = totalSessions > 0 ? (totalPurchases / totalSessions) * 100 : 0;
+    
+    const prospectingAndOrganicSessions = metaProspectingSessions + googleProspectingSessions + organicSessions;
+    const firstPurchaseCr = prospectingAndOrganicSessions > 0 ? (totalFirstPurchases / prospectingAndOrganicSessions) * 100 : 0;
+    
+    // Total sessions for repeat consideration includes remarketing sessions + previous buyers who might return
+    const repeatPurchaseCrDenominator = metaRemarketingSessions + totalFirstPurchases;
+    const repeatPurchaseCr = repeatPurchaseCrDenominator > 0 ? (totalRepeatPurchases / repeatPurchaseCrDenominator) * 100 : 0;
 
 
     return { 
@@ -214,7 +217,7 @@ export function ProfitCalculator() {
     )
   }
 
-  const renderInputGroup = (group: (typeof inputFields)[number]['group']) => (
+  const renderInputGroup = (group: string) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
         {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
           <div key={name} className="space-y-2">
@@ -245,6 +248,38 @@ export function ProfitCalculator() {
     </div>
   )
 
+  const renderGeneralInputGroup = (group: string) => (
+     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
+        {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
+          <div key={name} className="space-y-2">
+            <Label htmlFor={name} className="font-headline">{label}</Label>
+            <div className="relative">
+              {isCurrency && (
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                  {currencySymbols[currency]}
+                </span>
+              )}
+              <Input
+                id={name}
+                name={name}
+                type="number"
+                value={inputs[name]}
+                onChange={handleInputChange}
+                className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
+                aria-describedby={`${name}-description`}
+              />
+              {isPercentage && (
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                  %
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+    </div>
+  )
+
+
   return (
     <TooltipProvider delayDuration={0}>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
@@ -253,7 +288,6 @@ export function ProfitCalculator() {
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="font-headline text-2xl">Business Inputs</CardTitle>
-                  <CardDescription>Adjust these values to model your profit.</CardDescription>
                 </div>
                 <div className="w-32">
                   <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
@@ -318,32 +352,26 @@ export function ProfitCalculator() {
 
               <Separator className="my-8" />
               <h3 className="font-headline text-xl mb-4 text-primary/80">Organic & Profitability</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                 {inputFields.filter(f => f.group === 'general').map(({ name, label, isCurrency, isPercentage }) => (
-                  <div key={name} className="space-y-2">
-                    <Label htmlFor={name} className="font-headline">{label}</Label>
-                    <div className="relative">
-                       {isCurrency && (
-                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                          {currencySymbols[currency]}
-                        </span>
-                      )}
-                      <Input
-                        id={name}
-                        name={name}
-                        type="number"
-                        value={inputs[name]}
-                        onChange={handleInputChange}
-                        className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
-                      />
-                       {isPercentage && (
-                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
-                          %
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+               <div className="space-y-6 p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-headline text-lg mb-4">Organic Sessions</h4>
+                  {renderGeneralInputGroup('general-organic')}
+                </div>
+                <Separator/>
+                <div>
+                  <h4 className="font-headline text-lg mb-4">First Purchase</h4>
+                  {renderGeneralInputGroup('general-first-purchase')}
+                </div>
+                <Separator/>
+                 <div>
+                  <h4 className="font-headline text-lg mb-4">Repeat Purchase</h4>
+                  {renderGeneralInputGroup('general-repeat-purchase')}
+                </div>
+                 <Separator/>
+                 <div>
+                  <h4 className="font-headline text-lg mb-4">Fixed Costs</h4>
+                  {renderGeneralInputGroup('general-opex')}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -359,13 +387,11 @@ export function ProfitCalculator() {
         <Card className="lg:col-span-2 shadow-lg sticky top-8">
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Calculated Results</CardTitle>
-            <CardDescription>Your financial forecast based on the inputs and active scenarios.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Marketing Profit */}
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <p>Marketing Profit</p>
+                  <p className="text-xl">Marketing Profit</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
@@ -377,7 +403,7 @@ export function ProfitCalculator() {
                 </div>
                 <div className="flex items-center">
                     <p className={cn(
-                        "font-headline text-xl font-bold transition-colors duration-300",
+                        "font-headline text-2xl font-bold transition-colors duration-300",
                         results.scenarios.marketingProfit < 0 ? 'text-destructive' : 'text-green-500'
                     )}>
                         {formatCurrency(results.scenarios.marketingProfit)}
@@ -386,7 +412,6 @@ export function ProfitCalculator() {
                 </div>
             </div>
             
-             {/* Added by Scenarios */}
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <p>Added by Scenarios</p>
@@ -402,13 +427,12 @@ export function ProfitCalculator() {
                 </div>
                 <p className={cn(
                     "font-headline text-xl font-bold transition-colors duration-300",
-                    results.contributionMarginDelta < 0 ? 'text-destructive' : 'text-green-500'
+                    results.contributionMarginDelta === 0 ? "" : (results.contributionMarginDelta < 0 ? 'text-destructive' : 'text-green-500')
                 )}>
-                    {formatCurrency(results.contributionMarginDelta)}
+                    {results.scenarios.scenarioCosts > 0 ? formatCurrency(results.contributionMarginDelta) : "—"}
                 </p>
             </div>
             
-            {/* ROI */}
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <p>Scenarios ROI</p>
@@ -417,19 +441,20 @@ export function ProfitCalculator() {
                       <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>(Added Contribution Margin / Total Scenario Cost) * 100. This shows the return specifically on your scenario investments.</p>
+                      <p>(Added Contribution Margin / Total Scenario Cost) * 100.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
                  <p className={cn(
                     "font-headline text-xl font-bold transition-colors duration-300",
-                    results.roi < 0 ? 'text-destructive' : 'text-green-500'
+                     results.roi === 0 ? "" : (results.roi < 0 ? 'text-destructive' : 'text-green-500')
                 )}>
-                    {formatPercentage(results.roi)}
+                    {results.scenarios.scenarioCosts > 0 ? formatPercentage(results.roi) : "—"}
                 </p>
             </div>
 
-            {/* Money Invested */}
+            <Separator/>
+
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <p>Total Marketing Cost</p>
@@ -454,7 +479,6 @@ export function ProfitCalculator() {
                 <div className="flex justify-between"><span>OPEX + Scenarios</span><span>{formatCurrency(results.scenarios.marketingOpexFixed)}</span></div>
             </div>
 
-            {/* Blended Cost Per Session */}
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <p>Blended Cost Per Session</p>
@@ -475,7 +499,6 @@ export function ProfitCalculator() {
                 </div>
             </div>
 
-             {/* Total Sessions */}
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <p>Total Sessions</p>
@@ -502,7 +525,6 @@ export function ProfitCalculator() {
 
             <Separator />
             
-            {/* Blended AOV */}
             <div className="flex justify-between items-center">
               <p>Blended Average Order Value</p>
               <div className="flex items-center">
@@ -511,7 +533,6 @@ export function ProfitCalculator() {
               </div>
             </div>
 
-             {/* AOV Breakdown */}
             <div className="pl-6 text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between items-center">
                   <span>First Purchase</span>
@@ -529,7 +550,6 @@ export function ProfitCalculator() {
                 </div>
             </div>
             
-            {/* Blended CR */}
             <div className="flex justify-between items-center">
                 <p>Blended Conversion Rate</p>
                 <div className="flex items-center">
@@ -538,7 +558,6 @@ export function ProfitCalculator() {
                 </div>
             </div>
 
-            {/* CR Breakdown */}
             <div className="pl-6 text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between items-center">
                   <span>First Purchase</span>

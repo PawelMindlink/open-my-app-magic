@@ -9,7 +9,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { ScenarioFormDialog } from "./scenario-form-dialog";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { PlusCircle, Trash2, Pencil } from "lucide-react";
+import { PlusCircle, Trash2, Pencil, RefreshCw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -100,6 +100,9 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[
   },
 ];
 
+const getDefaultScenarios = () => initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}));
+
+
 type ScenarioManagerProps = {
   currency: Currency;
   activeScenarios: Scenario[];
@@ -123,14 +126,19 @@ export function ScenarioManager({
 
   useEffect(() => {
     // Load from storage only once on the client side.
-    const fromStorage = localStorage.getItem('scenarios');
-    let loadedScenarios: Scenario[];
-    if (fromStorage) {
-      loadedScenarios = JSON.parse(fromStorage);
-    } else {
-      loadedScenarios = initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}));
+    try {
+        const fromStorage = localStorage.getItem('scenarios');
+        let loadedScenarios: Scenario[];
+        if (fromStorage) {
+          loadedScenarios = JSON.parse(fromStorage);
+        } else {
+          loadedScenarios = getDefaultScenarios();
+        }
+        setAvailableScenarios(loadedScenarios);
+    } catch (error) {
+        console.error("Could not load scenarios from localStorage", error);
+        setAvailableScenarios(getDefaultScenarios());
     }
-    setAvailableScenarios(loadedScenarios);
     setIsInitialized(true);
   }, []);
 
@@ -140,7 +148,11 @@ export function ScenarioManager({
     if (!isInitialized) return;
     
     onActiveScenariosChange(availableScenarios.filter(s => s.active));
-    localStorage.setItem('scenarios', JSON.stringify(availableScenarios));
+    try {
+        localStorage.setItem('scenarios', JSON.stringify(availableScenarios));
+    } catch(error) {
+        console.error("Could not save scenarios to localStorage", error);
+    }
   }, [availableScenarios, onActiveScenariosChange, isInitialized]);
 
 
@@ -156,6 +168,10 @@ export function ScenarioManager({
     setEditingScenario(null);
     setIsFormOpen(false);
   };
+
+  const handleResetScenarios = () => {
+    setAvailableScenarios(getDefaultScenarios());
+  }
   
   const handleEditClick = (scenario: Scenario) => {
       setEditingScenario(scenario);
@@ -192,7 +208,12 @@ export function ScenarioManager({
   }, {} as Record<string, string>);
 
   if (!isInitialized) {
-      return null; // or a loading skeleton
+      return (
+        <Card className="shadow-lg">
+            <CardHeader><CardTitle className="font-headline text-2xl">Scenario Planning</CardTitle></CardHeader>
+            <CardContent><p>Loading scenarios...</p></CardContent>
+        </Card>
+      )
   }
   
   return (
@@ -209,17 +230,23 @@ export function ScenarioManager({
     />
 
     <Card className="shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
+      <CardHeader className="flex flex-row items-center justify-between space-x-4">
+        <div className="flex-1">
             <CardTitle className="font-headline text-2xl">Scenario Planning</CardTitle>
             <CardDescription>
-            Select different "what-if" scenarios to see their layered impact on your profitability.
+            Select "what-if" scenarios to see their impact on your profitability.
             </CardDescription>
         </div>
-        <Button onClick={() => { setEditingScenario(null); setIsFormOpen(true); }}>
-            <PlusCircle className="mr-2" />
-            Add Scenario
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleResetScenarios}>
+                <RefreshCw className="mr-2" />
+                Reset
+            </Button>
+            <Button onClick={() => { setEditingScenario(null); setIsFormOpen(true); }}>
+                <PlusCircle className="mr-2" />
+                Add Scenario
+            </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="p-4 border rounded-lg bg-card-foreground/5">

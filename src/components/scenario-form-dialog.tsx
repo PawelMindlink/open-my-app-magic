@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,8 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
+// This is the critical fix. By defining this as a constant at the module level,
+// it is created only once and will not be affected by component re-renders.
 const impactableMetrics = inputFields.filter(field => 
     !field.name.toLowerCase().includes('budget') && 
     field.name !== 'marketingOpexFixed'

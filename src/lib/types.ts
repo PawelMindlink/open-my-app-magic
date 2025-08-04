@@ -1,3 +1,4 @@
+
 export type Currency = "USD" | "EUR" | "PLN";
 
 export type EstimateLevel = 'pessimistic' | 'realistic' | 'optimistic';
@@ -41,7 +42,7 @@ export type Inputs = {
 type InputField = {
     name: keyof Inputs;
     label: string;
-    group: 'meta-prospecting' | 'meta-remarketing' | 'google-prospecting' | 'google-remarketing' | 'general';
+    group: 'meta-prospecting' | 'meta-remarketing' | 'google-prospecting' | 'google-remarketing' | 'general-organic' | 'general-first-purchase' | 'general-repeat-purchase' | 'general-opex';
     isCurrency?: boolean;
     isPercentage?: boolean;
 }
@@ -68,12 +69,15 @@ export const inputFields: InputField[] = [
     { name: 'googleRemarketingBounceRate', label: 'Bounce Rate', group: 'google-remarketing', isPercentage: true },
     { name: 'googleRemarketingConversionRate', label: 'Conversion Rate', group: 'google-remarketing', isPercentage: true },
     // General
-    { name: 'organicSessions', label: 'Organic Sessions', group: 'general' },
-    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'general', isPercentage: true },
-    { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'general', isCurrency: true },
-    { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'general', isPercentage: true },
-    { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'general', isPercentage: true },
-    { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'general', isCurrency: true },
-    { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'general', isPercentage: true },
-    { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'general', isCurrency: true },
+    { name: 'organicSessions', label: 'Organic Sessions', group: 'general-organic' },
+    
+    { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'general-first-purchase', isCurrency: true },
+    { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'general-first-purchase', isPercentage: true },
+    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'general-first-purchase', isPercentage: true },
+    
+    { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'general-repeat-purchase', isCurrency: true },
+    { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'general-repeat-purchase', isPercentage: true },
+    { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'general-repeat-purchase', isPercentage: true },
+
+    { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'general-opex', isCurrency: true },
 ];
