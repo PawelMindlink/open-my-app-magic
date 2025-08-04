@@ -218,10 +218,10 @@ export function ProfitCalculator() {
   }
 
   const renderInputGroup = (group: string) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
         {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
-          <div key={name} className="space-y-2">
-            <Label htmlFor={name} className="font-headline">{label}</Label>
+          <div key={name} className="flex flex-col space-y-2 justify-end">
+            <Label htmlFor={name} className="font-headline h-10 flex items-end">{label}</Label>
             <div className="relative">
               {isCurrency && (
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -249,10 +249,10 @@ export function ProfitCalculator() {
   )
 
   const renderGeneralInputGroup = (group: string) => (
-     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
+     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
         {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
-          <div key={name} className="space-y-2">
-            <Label htmlFor={name} className="font-headline">{label}</Label>
+          <div key={name} className="flex flex-col space-y-2 justify-end">
+            <Label htmlFor={name} className="font-headline h-10 flex items-end">{label}</Label>
             <div className="relative">
               {isCurrency && (
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -320,6 +320,7 @@ export function ProfitCalculator() {
                         <h5 className="font-semibold text-base mb-3">Prospecting</h5>
                         {renderInputGroup('meta-prospecting')}
                     </div>
+                    <Separator/>
                     <div>
                         <h5 className="font-semibold text-base mb-3">Remarketing</h5>
                         {renderInputGroup('meta-remarketing')}
@@ -343,6 +344,7 @@ export function ProfitCalculator() {
                            <h5 className="font-semibold text-base mb-3">Prospecting</h5>
                           {renderInputGroup('google-prospecting')}
                       </div>
+                      <Separator/>
                       <div>
                            <h5 className="font-semibold text-base mb-3">Remarketing</h5>
                           {renderInputGroup('google-remarketing')}
