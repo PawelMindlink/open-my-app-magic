@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -273,9 +274,14 @@ export function ProfitCalculator() {
                         {renderInputGroup('meta-remarketing')}
                     </div>
                   </div>
-                  <div className="mt-4 flex justify-end font-bold text-lg">
-                    <Label>Total Meta Budget:</Label>
-                    <span className="ml-2">{formatCurrency(results.scenarios.totalMetaBudget)}</span>
+                   <div className="mt-6 flex justify-end">
+                      <div className="w-1/3 space-y-2">
+                        <Label htmlFor="meta-total" className="font-headline">Total Meta Budget</Label>
+                        <div className="relative">
+                           <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">{currencySymbols[currency]}</span>
+                           <Input id="meta-total" value={results.scenarios.totalMetaBudget.toFixed(0)} disabled className="pl-7 font-bold" />
+                        </div>
+                      </div>
                   </div>
 
                   <Separator className="my-6" />
@@ -291,9 +297,14 @@ export function ProfitCalculator() {
                           {renderInputGroup('google-remarketing')}
                       </div>
                   </div>
-                  <div className="mt-4 flex justify-end font-bold text-lg">
-                    <Label>Total Google Budget:</Label>
-                    <span className="ml-2">{formatCurrency(results.scenarios.totalGoogleBudget)}</span>
+                  <div className="mt-6 flex justify-end">
+                      <div className="w-1/3 space-y-2">
+                        <Label htmlFor="google-total" className="font-headline">Total Google Budget</Label>
+                        <div className="relative">
+                           <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">{currencySymbols[currency]}</span>
+                           <Input id="google-total" value={results.scenarios.totalGoogleBudget.toFixed(0)} disabled className="pl-7 font-bold" />
+                        </div>
+                      </div>
                   </div>
               </div>
 
@@ -543,3 +554,5 @@ export function ProfitCalculator() {
     </TooltipProvider>
   );
 }
+
+    
