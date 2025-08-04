@@ -9,7 +9,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,12 +34,6 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
-// This logic is moved outside the component to prevent re-computation on every render.
-const impactableMetrics = inputFields.filter(field => 
-    !field.name.toLowerCase().includes('budget') && 
-    field.name !== 'marketingOpexFixed'
-);
-
 export function ScenarioFormDialog({ children, onSaveScenario, currency, scenario, open, onOpenChange }: ScenarioFormDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -49,6 +42,12 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLDivElement>(null);
 
+  const impactableMetrics = useMemo(() => {
+    return inputFields.filter(field => 
+        !field.name.toLowerCase().includes('budget') && 
+        field.name !== 'marketingOpexFixed'
+    );
+  }, []);
 
   const isEditing = !!scenario;
 
@@ -100,11 +99,9 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
 
   const handleSubmit = () => {
     if (!validate()) {
-        const firstErrorKey = Object.keys(errors)[0];
-        if (firstErrorKey) {
-            const errorElement = formRef.current?.querySelector(`[data-field-key="${firstErrorKey}"]`);
-            errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        const firstErrorKey = Object.keys(errors)[0] || 'name';
+        const errorElement = formRef.current?.querySelector(`[data-field-key="${firstErrorKey}"]`);
+        errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
     const newScenario = {
