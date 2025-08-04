@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,6 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
-// By defining this outside the component, we guarantee it's created only once.
 const impactableMetrics = inputFields.filter(field => 
     !field.name.toLowerCase().includes('budget') && 
     field.name !== 'marketingOpexFixed'
@@ -112,6 +111,47 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
     onOpenChange(false);
   };
   
+  const ImpactInput = ({ metricName, label }: { metricName: keyof Inputs; label: string }) => (
+    <div key={metricName} className="p-3 border rounded-md">
+      <Label className="font-semibold">{label}</Label>
+      <div className="grid grid-cols-3 gap-2 mt-2">
+        <div>
+          <Label htmlFor={`${metricName}-pessimistic`} className="text-xs text-muted-foreground">Pessimistic</Label>
+          <div className="relative">
+            <Input id={`${metricName}-pessimistic`} type="number" placeholder="0"
+              value={impact[metricName]?.pessimistic ?? ''}
+              onChange={e => handleImpactChange(metricName, 'pessimistic', e.target.value)}
+              className="pr-6"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
+          </div>
+        </div>
+        <div>
+          <Label htmlFor={`${metricName}-realistic`} className="text-xs text-muted-foreground">Realistic</Label>
+          <div className="relative">
+            <Input id={`${metricName}-realistic`} type="number" placeholder="0"
+              value={impact[metricName]?.realistic ?? ''}
+              onChange={e => handleImpactChange(metricName, 'realistic', e.target.value)}
+              className="pr-6"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
+          </div>
+        </div>
+        <div>
+          <Label htmlFor={`${metricName}-optimistic`} className="text-xs text-muted-foreground">Optimistic</Label>
+          <div className="relative">
+            <Input id={`${metricName}-optimistic`} type="number" placeholder="0"
+              value={impact[metricName]?.optimistic ?? ''}
+              onChange={e => handleImpactChange(metricName, 'optimistic', e.target.value)}
+              className="pr-6"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const dialogContent = (
     <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
@@ -146,44 +186,7 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
                     <h4 className="font-headline text-lg mb-4">Impact on Metrics (%)</h4>
                     <div className="space-y-4">
                         {impactableMetrics.map(({ name: metricName, label }) => (
-                             <div key={metricName} className="p-3 border rounded-md">
-                                <Label className="font-semibold">{label}</Label>
-                                <div className="grid grid-cols-3 gap-2 mt-2">
-                                    <div>
-                                        <Label htmlFor={`${metricName}-pessimistic`} className="text-xs text-muted-foreground">Pessimistic</Label>
-                                        <div className="relative">
-                                          <Input id={`${metricName}-pessimistic`} type="number" placeholder="0" 
-                                            value={impact[metricName]?.pessimistic ?? ''}
-                                            onChange={e => handleImpactChange(metricName, 'pessimistic', e.target.value)}
-                                            className="pr-6"
-                                          />
-                                          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
-                                        </div>
-                                    </div>
-                                     <div>
-                                        <Label htmlFor={`${metricName}-realistic`} className="text-xs text-muted-foreground">Realistic</Label>
-                                        <div className="relative">
-                                            <Input id={`${metricName}-realistic`} type="number" placeholder="0" 
-                                              value={impact[metricName]?.realistic ?? ''}
-                                              onChange={e => handleImpactChange(metricName, 'realistic', e.target.value)}
-                                              className="pr-6"
-                                            />
-                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
-                                        </div>
-                                    </div>
-                                     <div>
-                                        <Label htmlFor={`${metricName}-optimistic`} className="text-xs text-muted-foreground">Optimistic</Label>
-                                        <div className="relative">
-                                            <Input id={`${metricName}-optimistic`} type="number" placeholder="0" 
-                                                value={impact[metricName]?.optimistic ?? ''}
-                                                onChange={e => handleImpactChange(metricName, 'optimistic', e.target.value)}
-                                                className="pr-6"
-                                            />
-                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                             </div>
+                             <ImpactInput key={metricName} metricName={metricName} label={label} />
                         ))}
                     </div>
                 </div>
