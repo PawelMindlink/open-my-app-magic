@@ -31,10 +31,10 @@ export const Logo = ({ className }: { className?: string }) => {
 
         {/* Subtitle text */}
         <text
-          x="150"
+          x="265"
           y="65"
           dominantBaseline="middle"
-          textAnchor="middle"
+          textAnchor="end"
           fill="hsl(var(--foreground))"
           fontFamily="Assistant, sans-serif"
           fontSize="10"
@@ -43,10 +43,10 @@ export const Logo = ({ className }: { className?: string }) => {
           DIGITAL & E-COMMERCE
         </text>
         <text
-          x="150"
+          x="265"
           y="80"
           dominantBaseline="middle"
-          textAnchor="middle"
+          textAnchor="end"
           fill="hsl(var(--foreground))"
           fontFamily="Assistant, sans-serif"
           fontSize="10"
