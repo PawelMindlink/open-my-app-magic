@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "./ui/separator";
-import { Inputs, Currency, inputFields } from "@/lib/types";
+import { Inputs, Currency, inputFields, Impact, EstimateLevel } from "@/lib/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,12 +31,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-
-export type EstimateLevel = 'pessimistic' | 'realistic' | 'optimistic';
-
-export type Impact = {
-  [key in EstimateLevel]?: number;
-};
 
 export type Scenario = {
   id: string;
@@ -56,9 +50,8 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[
     description: "Implement A/B testing and UX improvements on key landing pages.",
     cost: 1500,
     impact: { 
-        crFirstPurchase: { pessimistic: 5, realistic: 10, optimistic: 15 }, 
-        metaRemarketingConversionRate: { pessimistic: 2, realistic: 5, optimistic: 8 }, 
-        googleRemarketingConversionRate: { pessimistic: 2, realistic: 5, optimistic: 8 } 
+        metaRemarketingConversionRate: { pessimistic: 5, realistic: 10, optimistic: 15 }, 
+        googleRemarketingConversionRate: { pessimistic: 5, realistic: 10, optimistic: 15 } 
     },
   },
   {
@@ -94,6 +87,17 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[
         googleProspectingConversionRate: { pessimistic: 5, realistic: 15, optimistic: 20 } 
     },
   },
+  {
+    id: "improve-speed",
+    name: "Improve Website Speed",
+    description: "Optimize images, implement caching, and use a CDN to decrease page load times.",
+    cost: 2500,
+    impact: { 
+        metaProspectingBounceRate: { pessimistic: -10, realistic: -20, optimistic: -30 }, 
+        googleProspectingBounceRate: { pessimistic: -10, realistic: -20, optimistic: -30 },
+        organicSessions: { pessimistic: 2, realistic: 5, optimistic: 8 }
+    },
+  },
 ];
 
 type ScenarioManagerProps = {
@@ -106,29 +110,38 @@ type ScenarioManagerProps = {
 
 export function ScenarioManager({ 
     currency,
+    activeScenarios,
     onActiveScenariosChange, 
     globalEstimateLevel,
     onGlobalEstimateLevelChange 
 }: ScenarioManagerProps) {
-  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(
-    initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}))
-  );
+  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
+    // Load from storage only once on the client side.
     const fromStorage = localStorage.getItem('scenarios');
+    let loadedScenarios: Scenario[];
     if (fromStorage) {
-      setAvailableScenarios(JSON.parse(fromStorage));
+      loadedScenarios = JSON.parse(fromStorage);
+    } else {
+      loadedScenarios = initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}));
     }
+    setAvailableScenarios(loadedScenarios);
+    setIsInitialized(true);
   }, []);
 
 
   useEffect(() => {
+    // Prevent writing to localStorage on the initial server render
+    if (!isInitialized) return;
+    
     onActiveScenariosChange(availableScenarios.filter(s => s.active));
     localStorage.setItem('scenarios', JSON.stringify(availableScenarios));
-  }, [availableScenarios, onActiveScenariosChange]);
+  }, [availableScenarios, onActiveScenariosChange, isInitialized]);
 
 
   const handleSaveScenario = (savedScenario: Omit<Scenario, 'id' | 'active' | 'estimateLevel' | 'isCustom'>, id?: string) => {
@@ -177,6 +190,10 @@ export function ScenarioManager({
     acc[field.name] = field.label;
     return acc;
   }, {} as Record<string, string>);
+
+  if (!isInitialized) {
+      return null; // or a loading skeleton
+  }
   
   return (
     <>

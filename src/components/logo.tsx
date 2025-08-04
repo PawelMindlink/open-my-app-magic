@@ -9,7 +9,6 @@ export const Logo = ({ className }: { className?: string }) => {
           <path id="pentagon" d="M2.5 0 L5 1.75 L4 4.5 L1 4.5 L0 1.75 Z" />
         </defs>
         
-        {/* Mindlink Text */}
         <text 
           x="50%" 
           y="35" 

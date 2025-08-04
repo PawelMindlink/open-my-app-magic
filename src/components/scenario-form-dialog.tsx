@@ -15,8 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Inputs, Currency, inputFields } from "@/lib/types";
-import { Scenario, Impact } from "./scenario-manager";
+import { Inputs, Currency, inputFields, Impact } from "@/lib/types";
+import { Scenario } from "./scenario-manager";
 import { cn } from "@/lib/utils";
 
 type ScenarioFormDialogProps = {
@@ -34,6 +34,12 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
+// By defining this outside the component, we guarantee it's created only once.
+const impactableMetrics = inputFields.filter(field => 
+    !field.name.toLowerCase().includes('budget') && 
+    field.name !== 'marketingOpexFixed'
+);
+
 export function ScenarioFormDialog({ children, onSaveScenario, currency, scenario, open, onOpenChange }: ScenarioFormDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -41,13 +47,6 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
   const [impact, setImpact] = useState<Partial<Record<keyof Inputs, Impact>>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLDivElement>(null);
-
-  const impactableMetrics = useMemo(() => {
-    return inputFields.filter(field => 
-        !field.name.toLowerCase().includes('budget') && 
-        field.name !== 'marketingOpexFixed'
-    );
-  }, []);
 
   const isEditing = !!scenario;
 
@@ -76,7 +75,6 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
     const numValue = value === "" ? undefined : parseFloat(value);
     setImpact((prev) => {
         const newMetricImpact = { ...prev[metric], [level]: numValue };
-        // If all levels for a metric are undefined, remove the metric from impact
         if (Object.values(newMetricImpact).every(v => v === undefined || v === 0 || v === null || v === '')) {
             const newImpact = {...prev};
             delete newImpact[metric];
@@ -129,12 +127,12 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
                 <div className="space-y-2" data-field-key="name">
                     <Label htmlFor="scenario-name" className="font-headline">Scenario Name *</Label>
                     <Input id="scenario-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Q3 Content Marketing Push" className={cn(errors.name && "border-destructive")} />
-                    {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                    {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
                 </div>
                  <div className="space-y-2" data-field-key="description">
                     <Label htmlFor="scenario-desc" className="font-headline">Description *</Label>
                     <Textarea id="scenario-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="A brief description of the initiative." className={cn(errors.description && "border-destructive")} />
-                     {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                     {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="scenario-cost" className="font-headline">Total Investment Cost</Label>

@@ -53,18 +53,24 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
     modifiedInputs.marketingOpexFixed += scenarioCosts;
 
     const {
-        metaProspectingBudget, metaProspectingCpc, metaProspectingConversionRate,
-        metaRemarketingBudget, metaRemarketingCpc, metaRemarketingConversionRate,
-        googleProspectingBudget, googleProspectingCpc, googleProspectingConversionRate,
-        googleRemarketingBudget, googleRemarketingCpc, googleRemarketingConversionRate,
+        metaProspectingBudget, metaProspectingCpc, metaProspectingBounceRate, metaProspectingConversionRate,
+        metaRemarketingBudget, metaRemarketingCpc, metaRemarketingBounceRate, metaRemarketingConversionRate,
+        googleProspectingBudget, googleProspectingCpc, googleProspectingBounceRate, googleProspectingConversionRate,
+        googleRemarketingBudget, googleRemarketingCpc, googleRemarketingBounceRate, googleRemarketingConversionRate,
         organicSessions, crFirstPurchase, aovFirstPurchase, gmFirstPurchase, crRepeatPurchase, 
         aovRepeatPurchase, gmRepeatPurchase, marketingOpexFixed
     } = modifiedInputs;
 
-    const metaProspectingSessions = metaProspectingCpc > 0 ? metaProspectingBudget / metaProspectingCpc : 0;
-    const metaRemarketingSessions = metaRemarketingCpc > 0 ? metaRemarketingBudget / metaRemarketingCpc : 0;
-    const googleProspectingSessions = googleProspectingCpc > 0 ? googleProspectingBudget / googleProspectingCpc : 0;
-    const googleRemarketingSessions = googleRemarketingCpc > 0 ? googleRemarketingBudget / googleRemarketingCpc : 0;
+    const calcChannelSessions = (budget: number, cpc: number, bounceRate: number) => {
+        if (cpc <= 0) return 0;
+        const clicks = budget / cpc;
+        return clicks * (1 - bounceRate / 100);
+    }
+
+    const metaProspectingSessions = calcChannelSessions(metaProspectingBudget, metaProspectingCpc, metaProspectingBounceRate);
+    const metaRemarketingSessions = calcChannelSessions(metaRemarketingBudget, metaRemarketingCpc, metaRemarketingBounceRate);
+    const googleProspectingSessions = calcChannelSessions(googleProspectingBudget, googleProspectingCpc, googleProspectingBounceRate);
+    const googleRemarketingSessions = calcChannelSessions(googleRemarketingBudget, googleRemarketingCpc, googleRemarketingBounceRate);
     
     const totalPaidSessions = metaProspectingSessions + metaRemarketingSessions + googleProspectingSessions + googleRemarketingSessions;
     const totalMetaBudget = metaProspectingBudget + metaRemarketingBudget;
@@ -100,7 +106,7 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
     const blendedCr = ((totalFirstPurchases + totalRepeatPurchases) / totalSessions || 0) * 100;
 
     const firstPurchaseCr = ((prospectingPurchases + organicFirstPurchases) / (metaProspectingSessions + googleProspectingSessions + organicSessions) || 0) * 100;
-    const repeatPurchaseCr = ((remarketingPurchases + repeatCustomersFromPrevious) / (metaRemarketingSessions + googleRemarketingSessions + totalFirstPurchases) || 0) * 100;
+    const repeatPurchaseCr = ((remarketingPurchases + repeatCustomersFromPrevious) / (metaRemarketingSessions + totalFirstPurchases) || 0) * 100;
 
 
     return { 
@@ -131,16 +137,20 @@ export function ProfitCalculator() {
   const [inputs, setInputs] = useState<Inputs>({
     metaProspectingBudget: 3000,
     metaProspectingCpc: 1.0,
+    metaProspectingBounceRate: 40,
     metaProspectingConversionRate: 1.5,
     metaRemarketingBudget: 2000,
     metaRemarketingCpc: 0.6,
+    metaRemarketingBounceRate: 25,
     metaRemarketingConversionRate: 4,
 
     googleProspectingBudget: 3000,
     googleProspectingCpc: 1.5,
+    googleProspectingBounceRate: 45,
     googleProspectingConversionRate: 2,
     googleRemarketingBudget: 2000,
     googleRemarketingCpc: 0.9,
+    googleRemarketingBounceRate: 30,
     googleRemarketingConversionRate: 5,
 
     organicSessions: 15000,
@@ -168,9 +178,7 @@ export function ProfitCalculator() {
 
   const results = useMemo(() => {
     const baseResults = calculateMetrics(inputs);
-    // Recalculate base marketingOpexFixed for scenario calculation
-    const inputsWithBaseOpex = {...inputs};
-    const scenarioResults = calculateMetrics(inputsWithBaseOpex, activeScenarios, globalEstimateLevel);
+    const scenarioResults = calculateMetrics(inputs, activeScenarios, globalEstimateLevel);
 
     const contributionMarginDelta = scenarioResults.contributionMargin - baseResults.contributionMargin;
     const roi = scenarioResults.scenarioCosts > 0 ? (contributionMarginDelta / scenarioResults.scenarioCosts) * 100 : 0;
@@ -207,7 +215,7 @@ export function ProfitCalculator() {
   }
 
   const renderInputGroup = (group: (typeof inputFields)[number]['group']) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
         {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
           <div key={name} className="space-y-2">
             <Label htmlFor={name} className="font-headline">{label}</Label>
@@ -263,7 +271,7 @@ export function ProfitCalculator() {
             <CardContent>
               <h3 className="font-headline text-xl mb-4 text-primary/80">Paid Ads</h3>
               <div className="space-y-6 p-4 border rounded-lg">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center mb-4">
                     <h4 className="font-headline text-lg">Meta Ads</h4>
                     <div className="w-1/3 space-y-2">
                       <Label htmlFor="meta-total" className="font-headline text-xs">Total Meta Budget</Label>
@@ -286,7 +294,7 @@ export function ProfitCalculator() {
 
                   <Separator className="my-6" />
                   
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center mb-4">
                     <h4 className="font-headline text-lg">Google Ads</h4>
                      <div className="w-1/3 space-y-2">
                         <Label htmlFor="google-total" className="font-headline text-xs">Total Google Budget</Label>
