@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Inputs, Currency, inputFields } from "@/lib/types";
 import { Scenario, Impact } from "./scenario-manager";
+import { cn } from "@/lib/utils";
 
 type ScenarioFormDialogProps = {
   onSaveScenario: (scenario: Omit<Scenario, "id" | "active" | "estimateLevel" | "isCustom">, id?: string) => void;
@@ -34,19 +35,20 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
-// Exclude budget and fixed cost fields from being directly impactable in scenarios
-const impactableMetrics = inputFields.filter(field => 
-    !field.name.toLowerCase().includes('budget') && 
-    field.name !== 'marketingOpexFixed'
-);
-
 export function ScenarioFormDialog({ children, onSaveScenario, currency, scenario, open, onOpenChange }: ScenarioFormDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState(0);
   const [impact, setImpact] = useState<Partial<Record<keyof Inputs, Impact>>>({});
+  const [errors, setErrors] = useState<{name?: boolean, description?: boolean}>({});
 
   const isEditing = !!scenario;
+
+  const impactableMetrics = useMemo(() => inputFields.filter(field => 
+    !field.name.toLowerCase().includes('budget') && 
+    field.name !== 'marketingOpexFixed'
+  ), []);
+
 
   useEffect(() => {
       if (open && scenario) {
@@ -54,12 +56,14 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
           setDescription(scenario.description);
           setCost(scenario.cost);
           setImpact(scenario.impact);
+          setErrors({});
       } else if (!open) {
           // Reset form when dialog is closed
           setName("");
           setDescription("");
           setCost(0);
           setImpact({});
+          setErrors({});
       }
   }, [open, scenario]);
 
@@ -84,9 +88,16 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
     });
   };
 
+  const validate = () => {
+    const newErrors: {name?: boolean, description?: boolean} = {};
+    if (!name.trim()) newErrors.name = true;
+    if (!description.trim()) newErrors.description = true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
   const handleSubmit = () => {
-    if (!name || !description) {
-        // Basic validation
+    if (!validate()) {
         return;
     }
     const newScenario = {
@@ -105,17 +116,19 @@ export function ScenarioFormDialog({ children, onSaveScenario, currency, scenari
           <DialogTitle className="font-headline text-2xl">{isEditing ? "Edit Scenario" : "Add Custom Scenario"}</DialogTitle>
           <DialogDescription>
             {isEditing ? "Modify this business initiative." : "Define a new business initiative to see its potential financial impact."}
+            <br/>
+            <span className="text-xs text-muted-foreground">Fields marked with * are required.</span>
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] p-4 -mx-4">
             <div className="space-y-6 px-1">
                 <div className="space-y-2">
-                    <Label htmlFor="scenario-name" className="font-headline">Scenario Name</Label>
-                    <Input id="scenario-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Q3 Content Marketing Push" />
+                    <Label htmlFor="scenario-name" className="font-headline">Scenario Name *</Label>
+                    <Input id="scenario-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Q3 Content Marketing Push" className={cn(errors.name && "border-destructive")} />
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="scenario-desc" className="font-headline">Description</Label>
-                    <Textarea id="scenario-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="A brief description of the initiative." />
+                    <Label htmlFor="scenario-desc" className="font-headline">Description *</Label>
+                    <Textarea id="scenario-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="A brief description of the initiative." className={cn(errors.description && "border-destructive")} />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="scenario-cost" className="font-headline">Total Investment Cost</Label>
