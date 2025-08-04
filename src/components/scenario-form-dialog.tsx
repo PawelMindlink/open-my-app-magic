@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ import { Scenario } from "./scenario-manager";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Progress } from "./ui/progress";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 type ScenarioFormDialogProps = {
   onSaveScenario: (
@@ -48,6 +49,185 @@ const currencySymbols: Record<Currency, string> = {
   EUR: "€",
   PLN: "zł",
 };
+
+const Step1 = memo(({ name, setName, description, setDescription, cost, setCost, currency, errors }: any) => (
+  <div className="space-y-6 px-1">
+    <div className="space-y-2">
+      <Label htmlFor="scenario-name" className="font-headline">Scenario Name *</Label>
+      <Input id="scenario-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Q3 Content Marketing Push" className={cn(errors.name && "border-destructive")} />
+      {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="scenario-desc" className="font-headline">Description *</Label>
+      <Textarea id="scenario-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A brief description of the initiative." className={cn(errors.description && "border-destructive")} />
+      {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="scenario-cost" className="font-headline">Total Investment Cost</Label>
+      <div className="relative">
+        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">{currencySymbols[currency]}</span>
+        <Input id="scenario-cost" type="number" value={cost} onChange={(e) => setCost(parseFloat(e.target.value) || 0)} className="pl-7" />
+      </div>
+    </div>
+  </div>
+));
+Step1.displayName = "Step1";
+
+
+const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
+    const [searchTerm, setSearchTerm] = useState("");
+    
+    const metricGroups = useMemo(() => {
+        const groups: Record<string, InputField[]> = {
+            "Meta Ads": [],
+            "Google Ads": [],
+            "General": [],
+        };
+
+        const filteredMetrics = impactableMetrics.filter(m => 
+            m.label.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        filteredMetrics.forEach(m => {
+            if (m.group.startsWith('meta')) groups["Meta Ads"].push(m);
+            else if (m.group.startsWith('google')) groups["Google Ads"].push(m);
+            else groups["General"].push(m);
+        });
+
+        return Object.entries(groups).filter(([, metrics]) => metrics.length > 0);
+    }, [searchTerm]);
+
+    return (
+        <div className="space-y-4 px-1">
+            <Input 
+                type="text" 
+                placeholder="Search metrics..." 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)}
+            />
+            {errors.metrics && <p className="text-sm text-destructive mt-1">{errors.metrics}</p>}
+            <Accordion type="multiple" defaultValue={["Meta Ads", "Google Ads", "General"]} className="w-full">
+                {metricGroups.map(([groupName, metrics]) => (
+                     <AccordionItem value={groupName} key={groupName}>
+                        <AccordionTrigger>{groupName}</AccordionTrigger>
+                        <AccordionContent>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                {metrics.map(({ name, label }) => (
+                                    <div key={name} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
+                                        <Checkbox
+                                            id={`metric-${name}`}
+                                            checked={selectedMetrics[name]}
+                                            onCheckedChange={(checked) =>
+                                                setSelectedMetrics((prev: any) => ({ ...prev, [name]: !!checked }))
+                                            }
+                                        />
+                                        <Label htmlFor={`metric-${name}`} className="font-normal cursor-pointer flex-grow">{label}</Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+             {metricGroups.length === 0 && <p className="text-muted-foreground text-center py-4">No metrics found.</p>}
+        </div>
+    );
+});
+Step2.displayName = "Step2";
+
+
+const Step3 = memo(({ selectedMetrics, impact, handleImpactChange, currency, currentInputs }: any) => {
+
+    const ImpactInput = ({ metric }: { metric: InputField }) => {
+        const metricImpact = impact[metric.name] ?? { type: 'percentage', value: {} };
+        const currentVal = currentInputs[metric.name];
+        
+        const getPlaceholder = (level: keyof Impact['value']) => {
+            if (metricImpact.type === 'absolute') {
+                return currentVal.toString();
+            }
+            return "0";
+        }
+  
+        const getSuffix = () => {
+            if (metric.isCurrency && metricImpact.type === 'absolute') return currencySymbols[currency];
+            if (metric.isPercentage || metricImpact.type === 'percentage') return "%";
+            return "";
+        }
+  
+        return (
+          <div className="p-4 border rounded-md">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                  <Label className="font-semibold">{metric.label}</Label>
+                  <p className="text-xs text-muted-foreground">Current Value: {currentVal}{metric.isPercentage ? '%' : ''}</p>
+                </div>
+                <RadioGroup
+                  value={metricImpact.type}
+                  onValueChange={(v) => handleImpactChange(metric.name, 'type', v as ImpactType)}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="percentage" id={`${metric.name}-percentage`} />
+                    <Label htmlFor={`${metric.name}-percentage`}>% Change</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="absolute" id={`${metric.name}-absolute`} />
+                    <Label htmlFor={`${metric.name}-absolute`}>Absolute</Label>
+                  </div>
+                </RadioGroup>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label htmlFor={`${metric.name}-pessimistic`} className="text-xs text-muted-foreground">Pessimistic</Label>
+                <div className="relative">
+                  <Input id={`${metric.name}-pessimistic`} type="number" placeholder={getPlaceholder('pessimistic')}
+                    value={metricImpact.value?.pessimistic ?? ''}
+                    onChange={e => handleImpactChange(metric.name, 'pessimistic', e.target.value)}
+                    className="pr-8"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor={`${metric.name}-realistic`} className="text-xs text-muted-foreground">Realistic</Label>
+                <div className="relative">
+                  <Input id={`${metric.name}-realistic`} type="number" placeholder={getPlaceholder('realistic')}
+                    value={metricImpact.value?.realistic ?? ''}
+                    onChange={e => handleImpactChange(metric.name, 'realistic', e.target.value)}
+                    className="pr-8"
+                  />
+                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor={`${metric.name}-optimistic`} className="text-xs text-muted-foreground">Optimistic</Label>
+                <div className="relative">
+                  <Input id={`${metric.name}-optimistic`} type="number" placeholder={getPlaceholder('optimistic')}
+                    value={metricImpact.value?.optimistic ?? ''}
+                    onChange={e => handleImpactChange(metric.name, 'optimistic', e.target.value)}
+                    className="pr-8"
+                  />
+                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4 px-1">
+          {impactableMetrics
+            .filter(m => selectedMetrics[m.name])
+            .map(metric => (
+              <ImpactInput key={metric.name} metric={metric} />
+            ))}
+        </div>
+      );
+});
+Step3.displayName = "Step3";
+
 
 export function ScenarioFormDialog({
   children,
@@ -151,165 +331,29 @@ export function ScenarioFormDialog({
   const handleBack = () => setStep((s) => s - 1);
 
   const handleSubmit = () => {
-    const newScenario = { name, description, cost, impact };
+    // Prune unselected metrics from final impact object
+    const finalImpact: Partial<Record<keyof Inputs, Impact>> = {};
+    for (const key in impact) {
+        const metricKey = key as keyof Inputs;
+        if(selectedMetrics[metricKey]) {
+            finalImpact[metricKey] = impact[metricKey];
+        }
+    }
+
+    const newScenario = { name, description, cost, impact: finalImpact };
     onSaveScenario(newScenario, scenario?.id);
     onOpenChange(false);
   };
 
   const renderStep = () => {
     switch (step) {
-      case 1: return <Step1 />;
-      case 2: return <Step2 />;
-      case 3: return <Step3 />;
+      case 1: return <Step1 {...{ name, setName, description, setDescription, cost, setCost, currency, errors }} />;
+      case 2: return <Step2 {...{ selectedMetrics, setSelectedMetrics, errors }} />;
+      case 3: return <Step3 {...{ selectedMetrics, impact, handleImpactChange, currency, currentInputs }} />;
       default: return null;
     }
   };
   
-  const Step1 = () => (
-    <div className="space-y-6 px-1">
-      <div className="space-y-2">
-        <Label htmlFor="scenario-name" className="font-headline">Scenario Name *</Label>
-        <Input id="scenario-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Q3 Content Marketing Push" className={cn(errors.name && "border-destructive")} />
-        {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="scenario-desc" className="font-headline">Description *</Label>
-        <Textarea id="scenario-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A brief description of the initiative." className={cn(errors.description && "border-destructive")} />
-        {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="scenario-cost" className="font-headline">Total Investment Cost</Label>
-        <div className="relative">
-          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">{currencySymbols[currency]}</span>
-          <Input id="scenario-cost" type="number" value={cost} onChange={(e) => setCost(parseFloat(e.target.value) || 0)} className="pl-7" />
-        </div>
-      </div>
-    </div>
-  );
-
-  const Step2 = () => {
-    const [searchTerm, setSearchTerm] = useState("");
-    const filteredMetrics = useMemo(() => 
-        impactableMetrics.filter(m => m.label.toLowerCase().includes(searchTerm.toLowerCase())),
-        [searchTerm]
-    );
-
-    return (
-        <div className="space-y-4 px-1">
-            <Input 
-                type="text" 
-                placeholder="Search metrics..." 
-                value={searchTerm} 
-                onChange={e => setSearchTerm(e.target.value)}
-            />
-            {errors.metrics && <p className="text-sm text-destructive mt-1">{errors.metrics}</p>}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredMetrics.map(({ name, label }) => (
-                <div key={name} className="flex items-center space-x-2 p-3 border rounded-md">
-                    <Checkbox
-                        id={name}
-                        checked={selectedMetrics[name]}
-                        onCheckedChange={(checked) =>
-                            setSelectedMetrics(prev => ({ ...prev, [name]: !!checked }))
-                        }
-                    />
-                    <Label htmlFor={name} className="font-normal cursor-pointer flex-grow">{label}</Label>
-                </div>
-            ))}
-            </div>
-            {filteredMetrics.length === 0 && <p className="text-muted-foreground text-center">No metrics found.</p>}
-        </div>
-    );
-  };
-  
-  const Step3 = () => (
-    <div className="space-y-4 px-1">
-      {impactableMetrics
-        .filter(m => selectedMetrics[m.name])
-        .map(metric => (
-          <ImpactInput key={metric.name} metric={metric} />
-        ))}
-    </div>
-  );
-
-  const ImpactInput = ({ metric }: { metric: InputField }) => {
-      const metricImpact = impact[metric.name] ?? { type: 'percentage', value: {} };
-      const currentVal = currentInputs[metric.name];
-      
-      const getPlaceholder = (level: keyof Impact['value']) => {
-          if (metricImpact.type === 'absolute') {
-              return currentVal.toString();
-          }
-          return "0";
-      }
-
-      const getSuffix = () => {
-          if (metric.isCurrency) return currencySymbols[currency];
-          if (metric.isPercentage || metricImpact.type === 'percentage') return "%";
-          return "";
-      }
-
-      return (
-        <div className="p-4 border rounded-md">
-          <div className="flex justify-between items-center mb-4">
-              <div>
-                <Label className="font-semibold">{metric.label}</Label>
-                <p className="text-xs text-muted-foreground">Current Value: {currentVal}{metric.isPercentage ? '%' : ''}</p>
-              </div>
-              <RadioGroup
-                value={metricImpact.type}
-                onValueChange={(v) => handleImpactChange(metric.name, 'type', v as ImpactType)}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="percentage" id={`${metric.name}-percentage`} />
-                  <Label htmlFor={`${metric.name}-percentage`}>% Change</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="absolute" id={`${metric.name}-absolute`} />
-                  <Label htmlFor={`${metric.name}-absolute`}>Absolute</Label>
-                </div>
-              </RadioGroup>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <Label htmlFor={`${metric.name}-pessimistic`} className="text-xs text-muted-foreground">Pessimistic</Label>
-              <div className="relative">
-                <Input id={`${metric.name}-pessimistic`} type="number" placeholder={getPlaceholder('pessimistic')}
-                  value={metricImpact.value?.pessimistic ?? ''}
-                  onChange={e => handleImpactChange(metric.name, 'pessimistic', e.target.value)}
-                  className="pr-8"
-                />
-                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor={`${metric.name}-realistic`} className="text-xs text-muted-foreground">Realistic</Label>
-              <div className="relative">
-                <Input id={`${metric.name}-realistic`} type="number" placeholder={getPlaceholder('realistic')}
-                  value={metricImpact.value?.realistic ?? ''}
-                  onChange={e => handleImpactChange(metric.name, 'realistic', e.target.value)}
-                  className="pr-8"
-                />
-                 <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor={`${metric.name}-optimistic`} className="text-xs text-muted-foreground">Optimistic</Label>
-              <div className="relative">
-                <Input id={`${metric.name}-optimistic`} type="number" placeholder={getPlaceholder('optimistic')}
-                  value={metricImpact.value?.optimistic ?? ''}
-                  onChange={e => handleImpactChange(metric.name, 'optimistic', e.target.value)}
-                  className="pr-8"
-                />
-                 <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground text-xs">{getSuffix()}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-  }
-
   const stepTitles = ["Details", "Select Metrics", "Define Impact"];
   const progressValue = ((step) / 3) * 100;
 

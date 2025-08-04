@@ -60,24 +60,24 @@ export type InputField = {
 export const inputFields: InputField[] = [
     // Meta Prospecting
     { name: 'metaProspectingBudget', label: 'Budget', group: 'meta-prospecting', isCurrency: true },
-    { name: 'metaProspectingCpc', label: 'CPC', group: 'meta-prospecting', isCurrency: true },
-    { name: 'metaProspectingBounceRate', label: 'Bounce Rate', group: 'meta-prospecting', isPercentage: true },
-    { name: 'metaProspectingConversionRate', label: 'Conversion Rate', group: 'meta-prospecting', isPercentage: true },
+    { name: 'metaProspectingCpc', label: 'Prospecting CPC', group: 'meta-prospecting', isCurrency: true },
+    { name: 'metaProspectingBounceRate', label: 'Prospecting Bounce Rate', group: 'meta-prospecting', isPercentage: true },
+    { name: 'metaProspectingConversionRate', label: 'Prospecting Conversion Rate', group: 'meta-prospecting', isPercentage: true },
     // Meta Remarketing
     { name: 'metaRemarketingBudget', label: 'Budget', group: 'meta-remarketing', isCurrency: true },
-    { name: 'metaRemarketingCpc', label: 'CPC', group: 'meta-remarketing', isCurrency: true },
-    { name: 'metaRemarketingBounceRate', label: 'Bounce Rate', group: 'meta-remarketing', isPercentage: true },
-    { name: 'metaRemarketingConversionRate', label: 'Conversion Rate', group: 'meta-remarketing', isPercentage: true },
+    { name: 'metaRemarketingCpc', label: 'Remarketing CPC', group: 'meta-remarketing', isCurrency: true },
+    { name: 'metaRemarketingBounceRate', label: 'Remarketing Bounce Rate', group: 'meta-remarketing', isPercentage: true },
+    { name: 'metaRemarketingConversionRate', label: 'Remarketing Conversion Rate', group: 'meta-remarketing', isPercentage: true },
     // Google Prospecting
     { name: 'googleProspectingBudget', label: 'Budget', group: 'google-prospecting', isCurrency: true },
-    { name: 'googleProspectingCpc', label: 'CPC', group: 'google-prospecting', isCurrency: true },
-    { name: 'googleProspectingBounceRate', label: 'Bounce Rate', group: 'google-prospecting', isPercentage: true },
-    { name: 'googleProspectingConversionRate', label: 'Conversion Rate', group: 'google-prospecting', isPercentage: true },
+    { name: 'googleProspectingCpc', label: 'Prospecting CPC', group: 'google-prospecting', isCurrency: true },
+    { name: 'googleProspectingBounceRate', label: 'Prospecting Bounce Rate', group: 'google-prospecting', isPercentage: true },
+    { name: 'googleProspectingConversionRate', label: 'Prospecting Conversion Rate', group: 'google-prospecting', isPercentage: true },
     // Google Remarketing
     { name: 'googleRemarketingBudget', label: 'Budget', group: 'google-remarketing', isCurrency: true },
-    { name: 'googleRemarketingCpc', label: 'CPC', group: 'google-remarketing', isCurrency: true },
-    { name: 'googleRemarketingBounceRate', label: 'Bounce Rate', group: 'google-remarketing', isPercentage: true },
-    { name: 'googleRemarketingConversionRate', label: 'Conversion Rate', group: 'google-remarketing', isPercentage: true },
+    { name: 'googleRemarketingCpc', label: 'Remarketing CPC', group: 'google-remarketing', isCurrency: true },
+    { name: 'googleRemarketingBounceRate', label: 'Remarketing Bounce Rate', group: 'google-remarketing', isPercentage: true },
+    { name: 'googleRemarketingConversionRate', label: 'Remarketing Conversion Rate', group: 'google-remarketing', isPercentage: true },
     // General
     { name: 'organicSessions', label: 'Organic Sessions', group: 'general-organic' },
     
