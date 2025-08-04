@@ -5,50 +5,70 @@ import React from "react";
 export const Logo = ({ className }: { className?: string }) => {
   return (
     <div className={cn("relative", className)}>
-      <svg viewBox="0 0 250 80" className="w-full h-full">
+      <svg
+        viewBox="0 0 300 100"
+        className="w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+      >
         <defs>
           <path id="pentagon" d="M2.5 0 L5 1.75 L4 4.5 L1 4.5 L0 1.75 Z" />
         </defs>
-        
-        <text 
-          x="50%" 
-          y="35" 
-          dominantBaseline="middle" 
-          textAnchor="middle" 
-          fill="#FFFFFF"
+
+        {/* The main "mindlink" text */}
+        <text
+          x="150"
+          y="35"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          fill="hsl(var(--foreground))"
           fontFamily="Montserrat, sans-serif"
-          fontSize="32"
+          fontSize="40"
           fontWeight="bold"
           letterSpacing="-0.5"
         >
           mindlink
         </text>
 
+        {/* Subtitle text */}
         <text
-          x="50%"
-          y="60"
+          x="150"
+          y="65"
           dominantBaseline="middle"
           textAnchor="middle"
-          fill="#FFFFFF"
+          fill="hsl(var(--foreground))"
           fontFamily="Assistant, sans-serif"
           fontSize="10"
           letterSpacing="1.5"
         >
-          DIGITAL
+          DIGITAL & E-COMMERCE
+        </text>
+        <text
+          x="150"
+          y="80"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          fill="hsl(var(--foreground))"
+          fontFamily="Assistant, sans-serif"
+          fontSize="10"
+          letterSpacing="1.5"
+        >
+          CONSULTING
         </text>
 
-        {/* First dot */}
-        <g transform="translate(33, 31) rotate(180)">
-           <use href="#pentagon" fill="#F77F00" />
-        </g>
+        {/* Orange decorative elements */}
+        {/* Dot on the 'i' */}
+        <rect x="123" y="21" width="6" height="6" fill="hsl(var(--primary))" />
+
+        {/* Square left of 'm' */}
+        <rect x="38" y="32" width="8" height="8" fill="hsl(var(--primary))" />
         
-        {/* Second dot */}
-         <g transform="translate(212, 22) rotate(30)">
-          <use href="#pentagon" fill="#F77F00" />
+        {/* Pentagon right of 'k' */}
+        <g transform="translate(250, 31) rotate(30)">
+          <use href="#pentagon" fill="hsl(var(--primary))" transform="scale(1.8)" />
         </g>
         
         {/* Vertical Bar */}
-        <rect x="220" y="55" width="4" height="20" fill="#F77F00" />
+        <rect x="268" y="68" width="4" height="20" fill="hsl(var(--primary))" />
       </svg>
     </div>
   );
