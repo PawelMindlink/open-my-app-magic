@@ -20,26 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
+import { Inputs, Currency, inputFields } from "@/lib/types";
 
-
-export type Inputs = {
-  metaAdsBudget: number;
-  metaCpc: number;
-  metaConversionRate: number; // as a percentage
-  googleAdsBudget: number;
-  googleCpc: number;
-  googleConversionRate: number; // as a percentage
-  organicSessions: number;
-  crFirstPurchase: number; // as a percentage
-  aovFirstPurchase: number;
-  gmFirstPurchase: number; // as a percentage
-  crRepeatPurchase: number; // as a percentage
-  aovRepeatPurchase: number;
-  gmRepeatPurchase: number; // as a percentage
-  marketingOpexFixed: number;
-};
-
-export type Currency = "USD" | "EUR" | "PLN";
 
 const currencySymbols: Record<Currency, string> = {
   USD: "$",
@@ -47,39 +31,22 @@ const currencySymbols: Record<Currency, string> = {
   PLN: "zł",
 };
 
-const inputFields: {
-  name: keyof Inputs;
-  label: string;
-  description: string;
-  isCurrency: boolean;
-  isPercentage: boolean;
-  group: "meta" | "google" | "general"
-}[] = [
-  { name: "metaAdsBudget", label: "Meta Ads Budget", description: "Total spend on Meta advertising.", isCurrency: true, isPercentage: false, group: 'meta' },
-  { name: "metaCpc", label: "Meta CPC", description: "Cost per click for Meta ads.", isCurrency: true, isPercentage: false, group: 'meta' },
-  { name: "metaConversionRate", label: "Meta Conv. Rate", description: "Conversion rate from Meta clicks.", isCurrency: false, isPercentage: true, group: 'meta' },
-  { name: "googleAdsBudget", label: "Google Ads Budget", description: "Total spend on Google advertising.", isCurrency: true, isPercentage: false, group: 'google' },
-  { name: "googleCpc", label: "Google CPC", description: "Cost per click for Google ads.", isCurrency: true, isPercentage: false, group: 'google' },
-  { name: "googleConversionRate", label: "Google Conv. Rate", description: "Conversion rate from Google clicks.", isCurrency: false, isPercentage: true, group: 'google' },
-  { name: "organicSessions", label: "Organic Sessions", description: "Website sessions from organic search.", isCurrency: false, isPercentage: false, group: 'general' },
-  { name: "crFirstPurchase", label: "Baseline CR First Purchase", description: "Conversion rate for first-time buyers (non-ad traffic).", isCurrency: false, isPercentage: true, group: 'general' },
-  { name: "aovFirstPurchase", label: "AOV First Purchase", description: "Average order value for first-time buyers.", isCurrency: true, isPercentage: false, group: 'general' },
-  { name: "gmFirstPurchase", label: "GM First Purchase", description: "Gross margin on first-time purchases.", isCurrency: false, isPercentage: true, group: 'general' },
-  { name: "crRepeatPurchase", label: "CR Repeat Purchase", description: "Conversion rate for repeat customers.", isCurrency: false, isPercentage: true, group: 'general' },
-  { name: "aovRepeatPurchase", label: "AOV Repeat Purchase", description: "Average order value for repeat customers.", isCurrency: true, isPercentage: false, group: 'general' },
-  { name: "gmRepeatPurchase", label: "GM Repeat Purchase", description: "Gross margin on repeat purchases.", isCurrency: false, isPercentage: true, group: 'general' },
-  { name: "marketingOpexFixed", label: "Marketing OPEX (Fixed)", description: "Fixed marketing operational expenses.", isCurrency: true, isPercentage: false, group: 'general' },
-];
-
-
 export function ProfitCalculator() {
   const [inputs, setInputs] = useState<Inputs>({
-    metaAdsBudget: 5000,
-    metaCpc: 0.8,
-    metaConversionRate: 2,
-    googleAdsBudget: 5000,
-    googleCpc: 1.2,
-    googleConversionRate: 3,
+    metaProspectingBudget: 3000,
+    metaProspectingCpc: 1.0,
+    metaProspectingConversionRate: 1.5,
+    metaRemarketingBudget: 2000,
+    metaRemarketingCpc: 0.6,
+    metaRemarketingConversionRate: 4,
+
+    googleProspectingBudget: 3000,
+    googleProspectingCpc: 1.5,
+    googleProspectingConversionRate: 2,
+    googleRemarketingBudget: 2000,
+    googleRemarketingCpc: 0.9,
+    googleRemarketingConversionRate: 5,
+
     organicSessions: 15000,
     crFirstPurchase: 1.5,
     aovFirstPurchase: 120,
@@ -123,29 +90,40 @@ export function ProfitCalculator() {
     modifiedInputs.marketingOpexFixed += scenarioCosts;
 
     const {
-        metaAdsBudget, metaCpc, metaConversionRate, googleAdsBudget, googleCpc, googleConversionRate,
+        metaProspectingBudget, metaProspectingCpc, metaProspectingConversionRate,
+        metaRemarketingBudget, metaRemarketingCpc, metaRemarketingConversionRate,
+        googleProspectingBudget, googleProspectingCpc, googleProspectingConversionRate,
+        googleRemarketingBudget, googleRemarketingCpc, googleRemarketingConversionRate,
         organicSessions, crFirstPurchase, aovFirstPurchase, gmFirstPurchase, crRepeatPurchase, 
         aovRepeatPurchase, gmRepeatPurchase, marketingOpexFixed
     } = modifiedInputs;
 
-    const metaPaidSessions = metaCpc > 0 ? metaAdsBudget / metaCpc : 0;
-    const googlePaidSessions = googleCpc > 0 ? googleAdsBudget / googleCpc : 0;
-    const totalPaidSessions = metaPaidSessions + googlePaidSessions;
-    const totalAdsBudget = metaAdsBudget + googleAdsBudget;
+    const metaProspectingSessions = metaProspectingCpc > 0 ? metaProspectingBudget / metaProspectingCpc : 0;
+    const metaRemarketingSessions = metaRemarketingCpc > 0 ? metaRemarketingBudget / metaRemarketingCpc : 0;
+    const googleProspectingSessions = googleProspectingCpc > 0 ? googleProspectingBudget / googleProspectingCpc : 0;
+    const googleRemarketingSessions = googleRemarketingCpc > 0 ? googleRemarketingBudget / googleRemarketingCpc : 0;
+    
+    const totalPaidSessions = metaProspectingSessions + metaRemarketingSessions + googleProspectingSessions + googleRemarketingSessions;
+    const totalAdsBudget = metaProspectingBudget + metaRemarketingBudget + googleProspectingBudget + googleRemarketingBudget;
 
-    const paidSessions = totalPaidSessions;
-    const totalSessions = paidSessions + organicSessions;
+    const totalSessions = totalPaidSessions + organicSessions;
     const cpSessionBlended = totalSessions > 0 ? totalAdsBudget / totalSessions : 0;
 
-    // Simplified: Applying a blended CR for ad traffic and a different one for organic
-    const paidPurchases = (metaPaidSessions * (metaConversionRate / 100)) + (googlePaidSessions * (googleConversionRate / 100));
+    const prospectingPurchases = (metaProspectingSessions * (metaProspectingConversionRate / 100)) + (googleProspectingSessions * (googleProspectingConversionRate / 100));
+    const remarketingPurchases = (metaRemarketingSessions * (metaRemarketingConversionRate / 100)) + (googleRemarketingSessions * (googleRemarketingConversionRate / 100));
     const organicPurchases = organicSessions * (crFirstPurchase / 100);
-    const totalFirstPurchases = paidPurchases + organicPurchases;
+    
+    const totalFirstPurchases = prospectingPurchases + organicPurchases;
+    const allPurchases = totalFirstPurchases + remarketingPurchases;
 
     const revenueFirstPurchase = totalFirstPurchases * aovFirstPurchase;
     const grossProfitFirstPurchase = revenueFirstPurchase * (gmFirstPurchase / 100);
 
-    const totalRepeatPurchases = totalFirstPurchases * (crRepeatPurchase / 100);
+    // Assumption: remarketing purchases are repeat purchases.
+    const repeatCustomersFromAds = remarketingPurchases;
+    const repeatCustomersFromPrevious = totalFirstPurchases * (crRepeatPurchase / 100);
+    const totalRepeatPurchases = repeatCustomersFromAds + repeatCustomersFromPrevious;
+
     const revenueRepeatPurchase = totalRepeatPurchases * aovRepeatPurchase;
     const grossProfitRepeatPurchase = revenueRepeatPurchase * (gmRepeatPurchase / 100);
 
@@ -169,18 +147,49 @@ export function ProfitCalculator() {
     `${value.toFixed(2)}%`;
 
 
-  const resultMetrics = [
-    { key: "netProfit", label: "Net Profit", format: formatCurrency },
-    { key: "roi", label: "Return on Investment (ROI)", format: formatPercentage },
-    { key: "contributionMargin", label: "Contribution Margin", format: formatCurrency },
-    { key: "totalGrossProfit", label: "Total Gross Profit", format: formatCurrency },
-    { key: "totalMarketingCost", label: "Total Marketing Cost", format: formatCurrency },
-    { key: "cpSessionBlended", label: "Blended Cost Per Session", format: formatCurrency },
-    { key: "totalSessions", label: "Total Sessions", format: formatNumber },
+  const resultMetrics: { key: keyof typeof results, label: string, format: (val: number) => string, tooltip: string }[] = [
+    { key: "netProfit", label: "Net Profit", format: formatCurrency, tooltip: "Total Gross Profit - Total Marketing Cost" },
+    { key: "roi", label: "Return on Investment (ROI)", format: formatPercentage, tooltip: "(Net Profit / Total Marketing Cost) * 100" },
+    { key: "contributionMargin", label: "Contribution Margin", format: formatCurrency, tooltip: "Total Gross Profit - Total Ads Budget" },
+    { key: "totalGrossProfit", label: "Total Gross Profit", format: formatCurrency, tooltip: "Gross Profit from First Purchases + Gross Profit from Repeat Purchases" },
+    { key: "totalMarketingCost", label: "Total Marketing Cost", format: formatCurrency, tooltip: "Total Ads Budget + Fixed Marketing OPEX + Scenario Costs" },
+    { key: "cpSessionBlended", label: "Blended Cost Per Session", format: formatCurrency, tooltip: "Total Ads Budget / Total Sessions (Paid + Organic)" },
+    { key: "totalSessions", label: "Total Sessions", format: formatNumber, tooltip: "Total Paid Sessions (from all ad channels) + Organic Sessions" },
   ];
 
+  const renderInputGroup = (group: (typeof inputFields)[number]['group']) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8">
+        {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
+          <div key={name} className="space-y-2">
+            <Label htmlFor={name} className="font-headline">{label}</Label>
+            <div className="relative">
+              {isCurrency && (
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                  {currencySymbols[currency]}
+                </span>
+              )}
+              <Input
+                id={name}
+                name={name}
+                type="number"
+                value={inputs[name]}
+                onChange={handleInputChange}
+                className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
+                aria-describedby={`${name}-description`}
+              />
+              {isPercentage && (
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                  %
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+    </div>
+  )
+
   return (
-    <>
+    <TooltipProvider>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-3 space-y-8">
           <Card className="shadow-lg">
@@ -203,71 +212,36 @@ export function ProfitCalculator() {
                 </div>
             </CardHeader>
             <CardContent>
-              <h3 className="font-headline text-lg mb-4">Meta Ads</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8 mb-6">
-                {inputFields.filter(f => f.group === 'meta').map(({ name, label, description, isCurrency, isPercentage }) => (
-                  <div key={name} className="space-y-2">
-                    <Label htmlFor={name} className="font-headline">{label}</Label>
-                    <div className="relative">
-                      {isCurrency && (
-                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                          {currencySymbols[currency]}
-                        </span>
-                      )}
-                      <Input
-                        id={name}
-                        name={name}
-                        type="number"
-                        value={inputs[name]}
-                        onChange={handleInputChange}
-                        className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
-                        aria-describedby={`${name}-description`}
-                      />
-                      {isPercentage && (
-                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
-                          %
-                        </span>
-                      )}
-                    </div>
-                    <p id={`${name}-description`} className="text-xs text-muted-foreground">{description}</p>
-                  </div>
-                ))}
+              <h3 className="font-headline text-xl mb-4 text-primary/80">Meta Ads</h3>
+              <div className="space-y-6">
+                <div>
+                    <h4 className="font-headline text-lg mb-4">Prospecting</h4>
+                    {renderInputGroup('meta-prospecting')}
+                </div>
+                 <div>
+                    <h4 className="font-headline text-lg mb-4">Remarketing</h4>
+                    {renderInputGroup('meta-remarketing')}
+                </div>
               </div>
-              <Separator className="my-6" />
-              <h3 className="font-headline text-lg mb-4">Google Ads</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8 mb-6">
-                {inputFields.filter(f => f.group === 'google').map(({ name, label, description, isCurrency, isPercentage }) => (
-                  <div key={name} className="space-y-2">
-                    <Label htmlFor={name} className="font-headline">{label}</Label>
-                    <div className="relative">
-                       {isCurrency && (
-                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
-                          {currencySymbols[currency]}
-                        </span>
-                      )}
-                      <Input
-                        id={name}
-                        name={name}
-                        type="number"
-                        value={inputs[name]}
-                        onChange={handleInputChange}
-                        className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
-                        aria-describedby={`${name}-description`}
-                      />
-                       {isPercentage && (
-                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
-                          %
-                        </span>
-                      )}
+              
+              <Separator className="my-8" />
+              
+              <h3 className="font-headline text-xl mb-4 text-primary/80">Google Ads</h3>
+                <div className="space-y-6">
+                    <div>
+                        <h4 className="font-headline text-lg mb-4">Prospecting</h4>
+                        {renderInputGroup('google-prospecting')}
                     </div>
-                    <p id={`${name}-description`} className="text-xs text-muted-foreground">{description}</p>
-                  </div>
-                ))}
-              </div>
-              <Separator className="my-6" />
-              <h3 className="font-headline text-lg mb-4">General Business Metrics</h3>
+                    <div>
+                        <h4 className="font-headline text-lg mb-4">Remarketing</h4>
+                        {renderInputGroup('google-remarketing')}
+                    </div>
+                </div>
+
+              <Separator className="my-8" />
+              <h3 className="font-headline text-xl mb-4 text-primary/80">General Business Metrics</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                 {inputFields.filter(f => f.group === 'general').map(({ name, label, description, isCurrency, isPercentage }) => (
+                 {inputFields.filter(f => f.group === 'general').map(({ name, label, isCurrency, isPercentage }) => (
                   <div key={name} className="space-y-2">
                     <Label htmlFor={name} className="font-headline">{label}</Label>
                     <div className="relative">
@@ -283,7 +257,6 @@ export function ProfitCalculator() {
                         value={inputs[name]}
                         onChange={handleInputChange}
                         className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
-                        aria-describedby={`${name}-description`}
                       />
                        {isPercentage && (
                         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
@@ -291,7 +264,6 @@ export function ProfitCalculator() {
                         </span>
                       )}
                     </div>
-                    <p id={`${name}-description`} className="text-xs text-muted-foreground">{description}</p>
                   </div>
                 ))}
               </div>
@@ -312,10 +284,20 @@ export function ProfitCalculator() {
             <CardDescription>Your financial forecast based on the inputs and active scenarios.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {resultMetrics.map(({ key, label, format }, index) => (
+            {resultMetrics.map(({ key, label, format, tooltip }, index) => (
               <React.Fragment key={key}>
                 <div className="flex justify-between items-center">
-                  <p className="text-muted-foreground">{label}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-muted-foreground">{label}</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                   <p className={cn(
                     "font-headline text-xl font-bold transition-colors duration-300",
                     key === 'netProfit' && (results.netProfit < 0 ? 'text-destructive' : 'text-green-500'),
@@ -330,6 +312,6 @@ export function ProfitCalculator() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </TooltipProvider>
   );
 }

@@ -4,12 +4,11 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Inputs, Currency } from "./profit-calculator";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { AddScenarioDialog } from "./add-scenario-dialog";
+import { ScenarioFormDialog } from "./scenario-form-dialog";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Pencil } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -18,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "./ui/separator";
+import { Inputs, Currency, inputFields } from "@/lib/types";
 
 export type EstimateLevel = 'pessimistic' | 'realistic' | 'optimistic';
 
@@ -33,9 +33,10 @@ export type Scenario = {
   impact: Partial<Record<keyof Inputs, Impact>>; // Percentage change
   active: boolean;
   estimateLevel: EstimateLevel;
+  isCustom: boolean;
 };
 
-const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel'>[] = [
+const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel' | 'isCustom'>[] = [
   {
     id: "cro-project",
     name: "Conversion Rate Optimization Project",
@@ -43,8 +44,8 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel'>[] = [
     cost: 1500,
     impact: { 
         crFirstPurchase: { pessimistic: 5, realistic: 10, optimistic: 15 }, 
-        metaConversionRate: { pessimistic: 2, realistic: 5, optimistic: 8 }, 
-        googleConversionRate: { pessimistic: 2, realistic: 5, optimistic: 8 } 
+        metaRemarketingConversionRate: { pessimistic: 2, realistic: 5, optimistic: 8 }, 
+        googleRemarketingConversionRate: { pessimistic: 2, realistic: 5, optimistic: 8 } 
     },
   },
   {
@@ -74,10 +75,10 @@ const initialScenarios: Omit<Scenario, 'active' | 'estimateLevel'>[] = [
     description: "Outsource ad management to an expert agency for better efficiency.",
     cost: 4000,
     impact: { 
-        metaCpc: { pessimistic: -5, realistic: -10, optimistic: -15 }, 
-        googleCpc: { pessimistic: -5, realistic: -10, optimistic: -15 }, 
-        metaConversionRate: { pessimistic: 5, realistic: 15, optimistic: 20 }, 
-        googleConversionRate: { pessimistic: 5, realistic: 15, optimistic: 20 } 
+        metaProspectingCpc: { pessimistic: -5, realistic: -10, optimistic: -15 }, 
+        googleProspectingCpc: { pessimistic: -5, realistic: -10, optimistic: -15 }, 
+        metaProspectingConversionRate: { pessimistic: 5, realistic: 15, optimistic: 20 }, 
+        googleProspectingConversionRate: { pessimistic: 5, realistic: 15, optimistic: 20 } 
     },
   },
 ];
@@ -92,17 +93,32 @@ type ScenarioManagerProps = {
 
 export function ScenarioManager({ 
     currency,
+    activeScenarios,
     onActiveScenariosChange, 
     globalEstimateLevel,
     onGlobalEstimateLevelChange 
 }: ScenarioManagerProps) {
   const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(() => 
-    initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic'}))
+    initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}))
   );
+  
+  const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
 
-  const handleAddScenario = (newScenario: Omit<Scenario, 'id' | 'active' | 'estimateLevel'>) => {
-    const scenarioWithId = { ...newScenario, id: `custom-${Date.now()}`, active: true, estimateLevel: 'realistic' as EstimateLevel };
-    setAvailableScenarios(prev => [...prev, scenarioWithId]);
+  useEffect(() => {
+    onActiveScenariosChange(availableScenarios.filter(s => s.active));
+  }, [availableScenarios, onActiveScenariosChange]);
+
+
+  const handleSaveScenario = (savedScenario: Omit<Scenario, 'id' | 'active' | 'estimateLevel' | 'isCustom'>, id?: string) => {
+    if (id) {
+        // Editing existing scenario
+        setAvailableScenarios(prev => prev.map(s => s.id === id ? {...availableScenarios.find(sc => sc.id === id)!, ...savedScenario} : s));
+    } else {
+        // Adding new scenario
+        const scenarioWithMeta: Scenario = { ...savedScenario, id: `custom-${Date.now()}`, active: true, estimateLevel: 'realistic', isCustom: true };
+        setAvailableScenarios(prev => [...prev, scenarioWithMeta]);
+    }
+    setEditingScenario(null);
   };
 
   const handleDeleteScenario = (scenarioId: string) => {
@@ -121,12 +137,6 @@ export function ScenarioManager({
     ));
   }
 
-  useEffect(() => {
-    const active = availableScenarios.filter(s => s.active);
-    onActiveScenariosChange(active);
-  }, [availableScenarios, onActiveScenariosChange]);
-
-
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 
@@ -135,24 +145,21 @@ export function ScenarioManager({
     return `${sign}${value}%`;
   }
 
-  const impactMetricLabels: Record<keyof Inputs, string> = {
-    metaAdsBudget: "Meta Ads Budget",
-    metaCpc: "Meta CPC",
-    metaConversionRate: "Meta Conv. Rate",
-    googleAdsBudget: "Google Ads Budget",
-    googleCpc: "Google CPC",
-    googleConversionRate: "Google Conv. Rate",
-    organicSessions: "Organic Sessions",
-    crFirstPurchase: "Baseline CR First Purchase",
-    aovFirstPurchase: "AOV First Purchase",
-    gmFirstPurchase: "GM First Purchase",
-    crRepeatPurchase: "CR Repeat Purchase",
-    aovRepeatPurchase: "AOV Repeat Purchase",
-    gmRepeatPurchase: "GM Repeat Purchase",
-    marketingOpexFixed: "Marketing OPEX",
-  };
+  const impactMetricLabels: Record<string, string> = inputFields.reduce((acc, field) => {
+    acc[field.name] = field.label;
+    return acc;
+  }, {} as Record<string, string>);
   
   return (
+    <>
+    <ScenarioFormDialog 
+        open={!!editingScenario} 
+        onOpenChange={(isOpen) => !isOpen && setEditingScenario(null)}
+        onSaveScenario={handleSaveScenario}
+        currency={currency}
+        scenario={editingScenario}
+    />
+
     <Card className="shadow-lg">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -161,12 +168,12 @@ export function ScenarioManager({
             Select different "what-if" scenarios to see their layered impact on your profitability.
             </CardDescription>
         </div>
-        <AddScenarioDialog onAddScenario={handleAddScenario} currency={currency}>
+        <ScenarioFormDialog onSaveScenario={handleSaveScenario} currency={currency}>
             <Button>
                 <PlusCircle className="mr-2" />
                 Add Scenario
             </Button>
-        </AddScenarioDialog>
+        </ScenarioFormDialog>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="p-4 border rounded-lg bg-card-foreground/5">
@@ -206,10 +213,13 @@ export function ScenarioManager({
                             </div>
                             <p className="text-sm text-muted-foreground">{scenario.description}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                           {scenario.id.startsWith('custom-') && (
+                        <div className="flex items-center gap-1">
+                           <Button variant="ghost" size="icon" onClick={() => setEditingScenario(scenario)}>
+                               <Pencil className="w-4 h-4 text-muted-foreground" />
+                           </Button>
+                           {scenario.isCustom && (
                              <Button variant="ghost" size="icon" onClick={() => handleDeleteScenario(scenario.id)}>
-                               <Trash2 className="w-4 h-4 text-destructive" />
+                                 <Trash2 className="w-4 h-4 text-destructive" />
                              </Button>
                            )}
                            <Switch
@@ -224,14 +234,18 @@ export function ScenarioManager({
                       <div className="flex-1">
                         <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Impacts</Label>
                         <div className="flex flex-wrap gap-2 pt-1">
-                            {Object.entries(scenario.impact).map(([key, value]) => (
-                                <Badge key={key} variant="secondary" className="font-mono">
-                                    {impactMetricLabels[key as keyof Inputs]}:{' '}
-                                    <span className={(value[currentEstimateLevel] ?? 0) > 0 ? 'text-green-700' : 'text-red-700'}>
-                                        {formatImpact(value[currentEstimateLevel] ?? 0)}
-                                    </span>
-                                </Badge>
-                            ))}
+                            {Object.entries(scenario.impact).map(([key, value]) => {
+                                const impactValue = value?.[currentEstimateLevel];
+                                if (impactValue === undefined || impactValue === 0) return null;
+                                return (
+                                    <Badge key={key} variant="secondary" className="font-mono">
+                                        {impactMetricLabels[key as keyof Inputs]}:{' '}
+                                        <span className={impactValue > 0 ? 'text-green-700' : 'text-red-700'}>
+                                            {formatImpact(impactValue)}
+                                        </span>
+                                    </Badge>
+                                )
+                            })}
                         </div>
                       </div>
                       <div className="w-full md:w-48">
@@ -258,5 +272,6 @@ export function ScenarioManager({
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }
