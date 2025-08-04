@@ -106,20 +106,26 @@ type ScenarioManagerProps = {
 
 export function ScenarioManager({ 
     currency,
-    activeScenarios,
     onActiveScenariosChange, 
     globalEstimateLevel,
     onGlobalEstimateLevelChange 
 }: ScenarioManagerProps) {
-  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(() => 
-    initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}))
-  );
+  const [availableScenarios, setAvailableScenarios] = useState<Scenario[]>(() => {
+    const fromStorage = typeof window !== 'undefined' ? localStorage.getItem('scenarios') : null;
+    if (fromStorage) {
+      return JSON.parse(fromStorage);
+    }
+    return initialScenarios.map(s => ({...s, active: false, estimateLevel: 'realistic', isCustom: false}));
+  });
   
   const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     onActiveScenariosChange(availableScenarios.filter(s => s.active));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('scenarios', JSON.stringify(availableScenarios));
+    }
   }, [availableScenarios, onActiveScenariosChange]);
 
 
@@ -158,7 +164,7 @@ export function ScenarioManager({
   }
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
+    new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
   const formatImpact = (value: number) => {
     const sign = value > 0 ? "+" : "";
@@ -277,7 +283,7 @@ export function ScenarioManager({
                                 return (
                                     <Badge key={key} variant="secondary" className="font-mono">
                                         {impactMetricLabels[key as keyof Inputs]}:{' '}
-                                        <span className={impactValue > 0 ? 'text-green-700' : 'text-red-700'}>
+                                        <span className={impactValue > 0 ? 'text-green-500' : 'text-destructive'}>
                                             {formatImpact(impactValue)}
                                         </span>
                                     </Badge>

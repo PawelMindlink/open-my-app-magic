@@ -73,9 +73,9 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
 
     const prospectingPurchases = (metaProspectingSessions * (metaProspectingConversionRate / 100)) + (googleProspectingSessions * (googleProspectingConversionRate / 100));
     const remarketingPurchases = (metaRemarketingSessions * (metaRemarketingConversionRate / 100)) + (googleRemarketingSessions * (googleRemarketingConversionRate / 100));
-    const organicPurchases = organicSessions * (crFirstPurchase / 100);
+    const organicFirstPurchases = organicSessions * (crFirstPurchase / 100);
     
-    const totalFirstPurchases = prospectingPurchases + organicPurchases;
+    const totalFirstPurchases = prospectingPurchases + organicFirstPurchases;
 
     const revenueFirstPurchase = totalFirstPurchases * aovFirstPurchase;
     const grossProfitFirstPurchase = revenueFirstPurchase * (gmFirstPurchase / 100);
@@ -93,6 +93,13 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
     const totalMarketingCost = totalAdsBudget + marketingOpexFixed;
     const marketingProfit = totalGrossProfit - totalMarketingCost;
 
+    const blendedAov = (revenueFirstPurchase + revenueRepeatPurchase) / (totalFirstPurchases + totalRepeatPurchases || 1);
+    const blendedCr = ((totalFirstPurchases + totalRepeatPurchases) / totalSessions || 0) * 100;
+
+    const firstPurchaseCr = ((prospectingPurchases + organicFirstPurchases) / (metaProspectingSessions + googleProspectingSessions + organicSessions) || 0) * 100;
+    const repeatPurchaseCr = ((remarketingPurchases + repeatCustomersFromPrevious) / (metaRemarketingSessions + googleRemarketingSessions + totalFirstPurchases) || 0) * 100;
+
+
     return { 
       totalSessions, 
       paidSessions: totalPaidSessions,
@@ -107,8 +114,10 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
       scenarioCosts,
       aovFirstPurchase: modifiedInputs.aovFirstPurchase,
       aovRepeatPurchase: modifiedInputs.aovRepeatPurchase,
-      crFirstPurchase: (prospectingPurchases + organicPurchases) / (totalPaidSessions - remarketingPurchases + organicSessions) * 100,
-      crRepeatPurchase: (remarketingPurchases / remarketingPurchases) * 100,
+      crFirstPurchase: firstPurchaseCr,
+      crRepeatPurchase: repeatPurchaseCr,
+      blendedAov,
+      blendedCr,
     };
 }
 
@@ -171,7 +180,7 @@ export function ProfitCalculator() {
   }, [inputs, activeScenarios, globalEstimateLevel]);
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
+    new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
   const formatNumber = (value: number) =>
     new Intl.NumberFormat("en-US").format(Math.round(value));
@@ -247,34 +256,35 @@ export function ProfitCalculator() {
                 </div>
             </CardHeader>
             <CardContent>
-              <h3 className="font-headline text-xl mb-4 text-primary/80">Meta Ads</h3>
-              <div className="space-y-6">
-                <div>
-                    <h4 className="font-headline text-lg mb-4">Prospecting</h4>
-                    {renderInputGroup('meta-prospecting')}
-                </div>
-                 <div>
-                    <h4 className="font-headline text-lg mb-4">Remarketing</h4>
-                    {renderInputGroup('meta-remarketing')}
-                </div>
+              <h3 className="font-headline text-xl mb-4 text-primary/80">Paid Ads</h3>
+              <div className="space-y-6 p-4 border rounded-lg">
+                  <h4 className="font-headline text-lg mb-4">Meta Ads</h4>
+                  <div className="space-y-6">
+                    <div>
+                        <h5 className="font-semibold text-base mb-3">Prospecting</h5>
+                        {renderInputGroup('meta-prospecting')}
+                    </div>
+                    <div>
+                        <h5 className="font-semibold text-base mb-3">Remarketing</h5>
+                        {renderInputGroup('meta-remarketing')}
+                    </div>
+                  </div>
+                  <Separator className="my-6" />
+                  <h4 className="font-headline text-lg mb-4">Google Ads</h4>
+                  <div className="space-y-6">
+                      <div>
+                           <h5 className="font-semibold text-base mb-3">Prospecting</h5>
+                          {renderInputGroup('google-prospecting')}
+                      </div>
+                      <div>
+                           <h5 className="font-semibold text-base mb-3">Remarketing</h5>
+                          {renderInputGroup('google-remarketing')}
+                      </div>
+                  </div>
               </div>
-              
-              <Separator className="my-8" />
-              
-              <h3 className="font-headline text-xl mb-4 text-primary/80">Google Ads</h3>
-                <div className="space-y-6">
-                    <div>
-                        <h4 className="font-headline text-lg mb-4">Prospecting</h4>
-                        {renderInputGroup('google-prospecting')}
-                    </div>
-                    <div>
-                        <h4 className="font-headline text-lg mb-4">Remarketing</h4>
-                        {renderInputGroup('google-remarketing')}
-                    </div>
-                </div>
 
               <Separator className="my-8" />
-              <h3 className="font-headline text-xl mb-4 text-primary/80">General Business Metrics</h3>
+              <h3 className="font-headline text-xl mb-4 text-primary/80">Organic & Profitability</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
                  {inputFields.filter(f => f.group === 'general').map(({ name, label, isCurrency, isPercentage }) => (
                   <div key={name} className="space-y-2">
@@ -458,13 +468,17 @@ export function ProfitCalculator() {
             </div>
 
             <Separator />
-
-             {/* AOV */}
+            
+            {/* Blended AOV */}
             <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p>Average Order Value</p>
-                </div>
+              <p>Blended Average Order Value</p>
+              <div className="flex items-center">
+                <p className="font-headline text-xl font-bold">{formatCurrency(results.scenarios.blendedAov)}</p>
+                {renderDelta(results.scenarios.blendedAov - results.base.blendedAov, formatCurrency, true)}
+              </div>
             </div>
+
+             {/* AOV Breakdown */}
             <div className="pl-6 text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between items-center">
                   <span>First Purchase</span>
@@ -482,12 +496,16 @@ export function ProfitCalculator() {
                 </div>
             </div>
             
-            {/* Conversion Rate */}
+            {/* Blended CR */}
             <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p>Conversion Rate</p>
+                <p>Blended Conversion Rate</p>
+                <div className="flex items-center">
+                    <p className="font-headline text-xl font-bold">{formatPercentage(results.scenarios.blendedCr)}</p>
+                    {renderDelta(results.scenarios.blendedCr - results.base.blendedCr, formatPercentage, true)}
                 </div>
             </div>
+
+            {/* CR Breakdown */}
             <div className="pl-6 text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between items-center">
                   <span>First Purchase</span>
