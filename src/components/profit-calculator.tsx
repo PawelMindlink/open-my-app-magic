@@ -44,7 +44,7 @@ const calculateMetrics = (currentInputs: Inputs, activeScenarios: Scenario[] = [
       for (const key in scenario.impact) {
         const impactKey = key as keyof Inputs;
         const impact = scenario.impact[impactKey];
-        if (impact) {
+        if (impact && impact.value) {
           const modifier = impact.value[estimateLevel];
           if (typeof modifier === 'number') {
             if (impact.type === 'percentage') {
@@ -210,7 +210,7 @@ export function ProfitCalculator() {
     new Intl.NumberFormat("en-US").format(Math.round(value));
   
   const formatPercentage = (value: number) =>
-    `${(value || 0).toFixed(2)}%`;
+    `${new Intl.NumberFormat("en-US").format(parseFloat((value || 0).toFixed(2)))}%`;
 
   const renderDelta = (delta: number, format: (val: number) => string, isGood: boolean) => {
     if (Math.abs(delta) < 0.01) return null;
@@ -218,7 +218,7 @@ export function ProfitCalculator() {
     const colorClass = (isPositive && isGood) || (!isPositive && !isGood) ? 'text-green-500' : 'text-destructive';
     const Icon = isPositive ? ArrowUp : ArrowDown;
     return (
-      <span className={cn("flex items-center text-sm font-semibold ml-2", colorClass)}>
+      <span className={cn("flex items-center text-sm font-semibold ml-2 shrink-0", colorClass)}>
         <Icon className="w-4 h-4 mr-1" />
         {format(Math.abs(delta))}
       </span>
@@ -257,7 +257,7 @@ export function ProfitCalculator() {
   )
 
   const renderGeneralInputGroup = (group: string) => (
-     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
         {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
           <div key={name} className="flex flex-col space-y-2 justify-end">
             <Label htmlFor={name} className="font-headline h-10 flex items-end">{label}</Label>
@@ -364,7 +364,7 @@ export function ProfitCalculator() {
               <h3 className="font-headline text-xl mb-4 text-primary/80">Organic & Profitability</h3>
                <div className="space-y-6 p-4 border rounded-lg">
                 <div>
-                  <h4 className="font-headline text-lg mb-4">Organic Sessions</h4>
+                  <h4 className="font-headline text-lg mb-4">Organic</h4>
                   {renderGeneralInputGroup('general-organic')}
                 </div>
                 <Separator/>
@@ -402,7 +402,7 @@ export function ProfitCalculator() {
           <CardContent className="space-y-6">
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <p className="text-xl">Marketing Profit</p>
+                  <p className="text-xl font-semibold">Marketing Profit</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
@@ -412,9 +412,9 @@ export function ProfitCalculator() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-baseline">
                     <p className={cn(
-                        "font-headline text-2xl font-bold transition-colors duration-300",
+                        "font-headline text-3xl font-bold transition-colors duration-300",
                         results.scenarios.marketingProfit < 0 ? 'text-destructive' : 'text-green-500'
                     )}>
                         {formatCurrency(results.scenarios.marketingProfit)}
@@ -478,7 +478,7 @@ export function ProfitCalculator() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-baseline">
                     <p className="font-headline text-xl font-bold">
                         {formatCurrency(results.scenarios.totalMarketingCost)}
                     </p>
@@ -502,7 +502,7 @@ export function ProfitCalculator() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-baseline">
                     <p className="font-headline text-xl font-bold">
                         {formatCurrency(results.scenarios.cpSessionBlended)}
                     </p>
@@ -522,7 +522,7 @@ export function ProfitCalculator() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                 <div className="flex items-center">
+                 <div className="flex items-baseline">
                     <p className="font-headline text-xl font-bold">
                         {formatNumber(results.scenarios.totalSessions)}
                     </p>
@@ -538,7 +538,7 @@ export function ProfitCalculator() {
             
             <div className="flex justify-between items-center">
               <p>Blended Average Order Value</p>
-              <div className="flex items-center">
+              <div className="flex items-baseline">
                 <p className="font-headline text-xl font-bold">{formatCurrency(results.scenarios.blendedAov)}</p>
                 {renderDelta(results.scenarios.blendedAov - results.base.blendedAov, formatCurrency, true)}
               </div>
@@ -547,14 +547,14 @@ export function ProfitCalculator() {
             <div className="pl-6 text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between items-center">
                   <span>First Purchase</span>
-                  <div className="flex items-center">
+                  <div className="flex items-baseline">
                     <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovFirstPurchase)}</span>
                     {renderDelta(results.scenarios.aovFirstPurchase - results.base.aovFirstPurchase, formatCurrency, true)}
                   </div>
                 </div>
                  <div className="flex justify-between items-center">
                   <span>Repeat Purchase</span>
-                  <div className="flex items-center">
+                  <div className="flex items-baseline">
                     <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovRepeatPurchase)}</span>
                      {renderDelta(results.scenarios.aovRepeatPurchase - results.base.aovRepeatPurchase, formatCurrency, true)}
                   </div>
@@ -563,7 +563,7 @@ export function ProfitCalculator() {
             
             <div className="flex justify-between items-center">
                 <p>Blended Conversion Rate</p>
-                <div className="flex items-center">
+                <div className="flex items-baseline">
                     <p className="font-headline text-xl font-bold">{formatPercentage(results.scenarios.blendedCr)}</p>
                     {renderDelta(results.scenarios.blendedCr - results.base.blendedCr, formatPercentage, true)}
                 </div>
@@ -572,14 +572,14 @@ export function ProfitCalculator() {
             <div className="pl-6 text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between items-center">
                   <span>First Purchase</span>
-                   <div className="flex items-center">
+                   <div className="flex items-baseline">
                     <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crFirstPurchase)}</span>
                     {renderDelta(results.scenarios.crFirstPurchase - results.base.crFirstPurchase, formatPercentage, true)}
                   </div>
                 </div>
                  <div className="flex justify-between items-center">
                   <span>Repeat Purchase</span>
-                   <div className="flex items-center">
+                   <div className="flex items-baseline">
                     <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crRepeatPurchase)}</span>
                     {renderDelta(results.scenarios.crRepeatPurchase - results.base.crRepeatPurchase, formatPercentage, true)}
                   </div>

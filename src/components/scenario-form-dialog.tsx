@@ -87,7 +87,8 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
             "Meta Ads": { prospecting: [], remarketing: [], items: [] },
             "Google Ads": { prospecting: [], remarketing: [], items: [] },
             "Organic": { prospecting: [], remarketing: [], items: [] },
-            "General Purchase Metrics": { prospecting: [], remarketing: [], items: [] },
+            "First Purchase": { prospecting: [], remarketing: [], items: [] },
+            "Repeat Purchase": { prospecting: [], remarketing: [], items: [] },
         };
 
         const filteredMetrics = impactableMetrics.filter(m => 
@@ -109,8 +110,10 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
                 }
             } else if (m.group === 'general-organic') {
                 groups["Organic"].items.push(m);
-            } else {
-                 groups["General Purchase Metrics"].items.push(m);
+            } else if (m.group === 'general-first-purchase') {
+                groups["First Purchase"].items.push(m);
+            } else if (m.group === 'general-repeat-purchase') {
+                groups["Repeat Purchase"].items.push(m);
             }
         });
         
@@ -139,7 +142,7 @@ const Step2 = memo(({ selectedMetrics, setSelectedMetrics, errors }: any) => {
                 onChange={e => setSearchTerm(e.target.value)}
             />
             {errors.metrics && <p className="text-sm text-destructive mt-1">{errors.metrics}</p>}
-            <Accordion type="multiple" defaultValue={["Meta Ads", "Google Ads", "Organic", "General Purchase Metrics"]} className="w-full">
+            <Accordion type="multiple" defaultValue={["Meta Ads", "Google Ads", "Organic", "First Purchase", "Repeat Purchase"]} className="w-full">
                 {metricGroups.map(([groupName, metrics]) => (
                      <AccordionItem value={groupName} key={groupName}>
                         <AccordionTrigger>{groupName}</AccordionTrigger>
@@ -251,7 +254,7 @@ const ImpactInput = memo(({ metric, impact, setImpact, currency, currentInputs }
             return newImpact;
         });
 
-    }, [metricImpact.value?.[focusedInput ?? 'realistic']]);
+    }, [metricImpact.value?.pessimistic, metricImpact.value?.realistic, metricImpact.value?.optimistic, focusedInput]);
 
     return (
       <div className="p-4 border rounded-md">
@@ -265,11 +268,11 @@ const ImpactInput = memo(({ metric, impact, setImpact, currency, currentInputs }
               onValueChange={handleTypeChange}
               className="flex gap-4"
             >
-              <Label htmlFor={`${metric.name}-percentage`} className="flex items-center space-x-2 cursor-pointer">
+              <Label htmlFor={`${metric.name}-percentage`} className="flex items-center space-x-2 cursor-pointer p-1 rounded-md hover:bg-muted/50">
                 <RadioGroupItem value="percentage" id={`${metric.name}-percentage`} />
                 <span>% Change</span>
               </Label>
-              <Label htmlFor={`${metric.name}-absolute`} className="flex items-center space-x-2 cursor-pointer">
+              <Label htmlFor={`${metric.name}-absolute`} className="flex items-center space-x-2 cursor-pointer p-1 rounded-md hover:bg-muted/50">
                 <RadioGroupItem value="absolute" id={`${metric.name}-absolute`} />
                 <span>Absolute</span>
               </Label>
@@ -491,5 +494,3 @@ export function ScenarioFormDialog({
 
   return <Dialog open={open} onOpenChange={onOpenChange}>{children}{dialogContent}</Dialog>;
 }
-
-    

@@ -78,17 +78,21 @@ export const inputFields: InputField[] = [
     { name: 'googleRemarketingCpc', label: 'Remarketing CPC', group: 'google-remarketing', isCurrency: true },
     { name: 'googleRemarketingBounceRate', label: 'Remarketing Bounce Rate', group: 'google-remarketing', isPercentage: true },
     { name: 'googleRemarketingConversionRate', label: 'Remarketing Conversion Rate', group: 'google-remarketing', isPercentage: true },
-    // General
-    { name: 'organicSessions', label: 'Organic Sessions', group: 'general-organic' },
     
+    // General - Organic
+    { name: 'organicSessions', label: 'Organic Sessions', group: 'general-organic' },
+    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'general-organic', isPercentage: true },
+    
+    // General - First Purchase
     { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'general-first-purchase', isCurrency: true },
     { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'general-first-purchase', isPercentage: true },
-    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'general-first-purchase', isPercentage: true },
     
+    // General - Repeat Purchase
     { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'general-repeat-purchase', isCurrency: true },
     { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'general-repeat-purchase', isPercentage: true },
     { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'general-repeat-purchase', isPercentage: true },
 
+    // General - OPEX
     { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'general-opex', isCurrency: true },
 ];
 
