@@ -2,8 +2,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithRedirect, GoogleAuthProvider, signOut as firebaseSignOut, getRedirectResult } from 'firebase/auth';
-import { auth } from '@/lib/firebase'; // Adjust this path if needed
+import { User, onAuthStateChanged, signInWithRedirect, GoogleAuthProvider, signOut as firebaseSignOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -19,41 +19,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // This effect is the single source of truth for the user's auth state.
+  // onAuthStateChanged handles all cases, including startup and redirect returns.
   useEffect(() => {
-    // This handles keeping the user logged in across sessions and after redirects.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user); // This can be null if signed out.
-      setLoading(false); // This is the reliable point to end the loading state.
-    });
-    
-    // This handles the redirect result after signing in.
-    // It's important to process this to get user info from the redirect.
-    getRedirectResult(auth).catch((error) => {
-        console.error("Error getting redirect result:", error);
-        // Even if there's an error, onAuthStateChanged will have set the correct
-        // loading and user state, so we don't need to setLoading(false) here.
+      setUser(user);
+      setLoading(false);
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
   const signIn = async () => {
     setLoading(true);
     const provider = new GoogleAuthProvider();
+    // Request access to the user's Google Analytics data.
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
     try {
-      // We don't need to await here, the page will redirect.
+      // signInWithRedirect is more robust in complex environments than signInWithPopup.
       await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error("Error during sign-in redirect:", error);
-      setLoading(false);
+      setLoading(false); // Ensure loading is false on error
     }
   };
 
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      setUser(null); // Explicitly set user to null on sign out
+      setUser(null);
     } catch (error) {
       console.error("Error during sign-out:", error);
     }
@@ -61,7 +56,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const getToken = async (): Promise<string | null> => {
     if (!auth.currentUser) return null;
-    return await auth.currentUser.getIdToken(true); // Force refresh
+    // Force refresh is not always needed, but can be useful.
+    // Let's use false to rely on cached token unless expired.
+    return await auth.currentUser.getIdToken(); 
   }
 
 
