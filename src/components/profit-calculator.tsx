@@ -2,6 +2,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import {
   Card,
   CardHeader,
@@ -22,8 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, ArrowUp, ArrowDown } from "lucide-react";
+import { HelpCircle, ArrowUp, ArrowDown, FileDown } from "lucide-react";
 import { Inputs, Currency, inputFields, EstimateLevel } from "@/lib/types";
+import { ProjectionsChart } from "./projections-chart";
+import { Button } from "./ui/button";
 
 
 const currencySymbols: Record<Currency, string> = {
@@ -203,6 +207,37 @@ export function ProfitCalculator() {
 
   }, [inputs, activeScenarios, globalEstimateLevel]);
 
+  const handleExport = () => {
+    const baselineData = { ...inputs, ...results.base, scenarios: "Baseline" };
+    const scenarioData = { ...inputs, ...results.scenarios, scenarios: activeScenarios.map(s => s.name).join(', ') || "No Scenarios" };
+
+    const dataToExport = [
+      { category: "Inputs", ...flattenObject(inputs) },
+      { category: "Baseline Results", ...flattenObject(results.base) },
+      { category: "Scenario Results", ...flattenObject(results.scenarios) }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "ProfitPilot Export");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, `ProfitPilot_Export_${new Date().toISOString()}.xlsx`);
+  }
+
+  const flattenObject = (obj: any, parentKey = '', res: any = {}) => {
+    for(let key in obj){
+      const propName = parentKey ? parentKey + '_' + key : key;
+      if(typeof obj[key] === 'object' && !Array.isArray(obj[key])){
+        flattenObject(obj[key], propName, res);
+      } else {
+        res[propName] = obj[key];
+      }
+    }
+    return res;
+  }
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 
@@ -210,7 +245,7 @@ export function ProfitCalculator() {
     new Intl.NumberFormat("en-US", {useGrouping: true}).format(Math.round(value));
   
   const formatPercentage = (value: number) =>
-    `${new Intl.NumberFormat("en-US", {useGrouping: true}).format(parseFloat((value || 0).toFixed(2)))}%`;
+    `${new Intl.NumberFormat("en-US", {useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}%`;
 
   const renderDelta = (delta: number, format: (val: number) => string, isGood: boolean) => {
     if (Math.abs(delta) < 0.01) return null;
@@ -397,200 +432,216 @@ export function ProfitCalculator() {
             />
         </div>
 
-        <Card className="lg:col-span-2 shadow-lg sticky top-8">
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Calculated Results</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p className="text-xl font-semibold">Marketing Profit</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Total Gross Profit - Total Marketing Cost</p>
-                    </TooltipContent>
-                  </Tooltip>
+        <div className="lg:col-span-2 space-y-8">
+            <Card className="shadow-lg sticky top-8">
+            <CardHeader>
+                <CardTitle className="font-headline text-2xl">Calculated Results</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                    <p className="text-xl font-semibold">Marketing Profit</p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>Total Gross Profit - Total Marketing Cost</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </div>
+                    <div className="flex items-baseline">
+                        <p className={cn(
+                            "font-headline text-3xl font-bold transition-colors duration-300",
+                            results.scenarios.marketingProfit < 0 ? 'text-destructive' : 'text-green-500'
+                        )}>
+                            {formatCurrency(results.scenarios.marketingProfit)}
+                        </p>
+                        {renderDelta(results.scenarios.marketingProfit - results.base.marketingProfit, formatCurrency, true)}
+                    </div>
                 </div>
-                <div className="flex items-baseline">
+                
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                    <p>Added by Scenarios</p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>The additional Contribution Margin generated by the active scenarios.</p>
+                        <p className="text-sm text-muted-foreground">Formula: Contribution Margin (Scenarios) - Contribution Margin (Base)</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </div>
                     <p className={cn(
-                        "font-headline text-3xl font-bold transition-colors duration-300",
-                        results.scenarios.marketingProfit < 0 ? 'text-destructive' : 'text-green-500'
+                        "font-headline text-xl font-bold transition-colors duration-300",
+                        results.contributionMarginDelta === 0 ? "" : (results.contributionMarginDelta < 0 ? 'text-destructive' : 'text-green-500')
                     )}>
-                        {formatCurrency(results.scenarios.marketingProfit)}
+                        {results.scenarios.scenarioCosts > 0 ? formatCurrency(results.contributionMarginDelta) : "—"}
                     </p>
-                    {renderDelta(results.scenarios.marketingProfit - results.base.marketingProfit, formatCurrency, true)}
                 </div>
-            </div>
-            
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p>Added by Scenarios</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>The additional Contribution Margin generated by the active scenarios.</p>
-                      <p className="text-sm text-muted-foreground">Formula: Contribution Margin (Scenarios) - Contribution Margin (Base)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <p className={cn(
-                    "font-headline text-xl font-bold transition-colors duration-300",
-                    results.contributionMarginDelta === 0 ? "" : (results.contributionMarginDelta < 0 ? 'text-destructive' : 'text-green-500')
-                )}>
-                    {results.scenarios.scenarioCosts > 0 ? formatCurrency(results.contributionMarginDelta) : "—"}
-                </p>
-            </div>
-            
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p>Scenarios ROI</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>(Added Contribution Margin / Total Scenario Cost) * 100.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                 <p className={cn(
-                    "font-headline text-xl font-bold transition-colors duration-300",
-                     results.roi === 0 ? "" : (results.roi < 0 ? 'text-destructive' : 'text-green-500')
-                )}>
-                    {results.scenarios.scenarioCosts > 0 ? formatPercentage(results.roi) : "—"}
-                </p>
-            </div>
-
-            <Separator/>
-
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p>Total Marketing Cost</p>
-                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                       <p>Total Ads Budget + Fixed Marketing OPEX + Scenario Costs</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="flex items-baseline">
-                    <p className="font-headline text-xl font-bold">
-                        {formatCurrency(results.scenarios.totalMarketingCost)}
-                    </p>
-                    {renderDelta(results.scenarios.totalMarketingCost - results.base.totalMarketingCost, formatCurrency, false)}
-                </div>
-            </div>
-             <div className="pl-6 text-sm text-muted-foreground space-y-1">
-                <div className="flex justify-between"><span>Ads Budget</span><span>{formatCurrency(results.scenarios.totalAdsBudget)}</span></div>
-                <div className="flex justify-between"><span>OPEX + Scenarios</span><span>{formatCurrency(results.scenarios.marketingOpexFixed)}</span></div>
-            </div>
-
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p>Blended Cost Per Session</p>
-                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                       <p>Total Ads Budget / Total Sessions (Paid + Organic)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="flex items-baseline">
-                    <p className="font-headline text-xl font-bold">
-                        {formatCurrency(results.scenarios.cpSessionBlended)}
-                    </p>
-                     {renderDelta(results.scenarios.cpSessionBlended - results.base.cpSessionBlended, formatCurrency, false)}
-                </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <p>Total Sessions</p>
-                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Total Paid Sessions (from all ad channels) + Organic Sessions</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                 <div className="flex items-baseline">
-                    <p className="font-headline text-xl font-bold">
-                        {formatNumber(results.scenarios.totalSessions)}
-                    </p>
-                     {renderDelta(results.scenarios.totalSessions - results.base.totalSessions, formatNumber, true)}
-                </div>
-            </div>
-            <div className="pl-6 text-sm text-muted-foreground space-y-1">
-                <div className="flex justify-between"><span>Paid Sessions</span><span>{formatNumber(results.scenarios.paidSessions)}</span></div>
-                <div className="flex justify-between"><span>Organic Sessions</span><span>{formatNumber(results.scenarios.organicSessions)}</span></div>
-            </div>
-
-            <Separator />
-            
-            <div className="flex justify-between items-center">
-              <p>Blended Average Order Value</p>
-              <div className="flex items-baseline">
-                <p className="font-headline text-xl font-bold">{formatCurrency(results.scenarios.blendedAov)}</p>
-                {renderDelta(results.scenarios.blendedAov - results.base.blendedAov, formatCurrency, true)}
-              </div>
-            </div>
-
-            <div className="pl-6 text-sm text-muted-foreground space-y-1">
+                
                 <div className="flex justify-between items-center">
-                  <span>First Purchase</span>
-                  <div className="flex items-baseline">
-                    <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovFirstPurchase)}</span>
-                    {renderDelta(results.scenarios.aovFirstPurchase - results.base.aovFirstPurchase, formatCurrency, true)}
-                  </div>
+                    <div className="flex items-center gap-2">
+                    <p>Scenarios ROI</p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>(Added Contribution Margin / Total Scenario Cost) * 100.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </div>
+                    <p className={cn(
+                        "font-headline text-xl font-bold transition-colors duration-300",
+                        results.roi === 0 ? "" : (results.roi < 0 ? 'text-destructive' : 'text-green-500')
+                    )}>
+                        {results.scenarios.scenarioCosts > 0 ? formatPercentage(results.roi) : "—"}
+                    </p>
                 </div>
-                 <div className="flex justify-between items-center">
-                  <span>Repeat Purchase</span>
-                  <div className="flex items-baseline">
-                    <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovRepeatPurchase)}</span>
-                     {renderDelta(results.scenarios.aovRepeatPurchase - results.base.aovRepeatPurchase, formatCurrency, true)}
-                  </div>
-                </div>
-            </div>
-            
-            <div className="flex justify-between items-center">
-                <p>Blended Conversion Rate</p>
-                <div className="flex items-baseline">
-                    <p className="font-headline text-xl font-bold">{formatPercentage(results.scenarios.blendedCr)}</p>
-                    {renderDelta(results.scenarios.blendedCr - results.base.blendedCr, formatPercentage, true)}
-                </div>
-            </div>
 
-            <div className="pl-6 text-sm text-muted-foreground space-y-1">
+                <Separator/>
+
                 <div className="flex justify-between items-center">
-                  <span>First Purchase</span>
-                   <div className="flex items-baseline">
-                    <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crFirstPurchase)}</span>
-                    {renderDelta(results.scenarios.crFirstPurchase - results.base.crFirstPurchase, formatPercentage, true)}
-                  </div>
+                    <div className="flex items-center gap-2">
+                    <p>Total Marketing Cost</p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>Total Ads Budget + Fixed Marketing OPEX + Scenario Costs</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </div>
+                    <div className="flex items-baseline">
+                        <p className="font-headline text-xl font-bold">
+                            {formatCurrency(results.scenarios.totalMarketingCost)}
+                        </p>
+                        {renderDelta(results.scenarios.totalMarketingCost - results.base.totalMarketingCost, formatCurrency, false)}
+                    </div>
                 </div>
-                 <div className="flex justify-between items-center">
-                  <span>Repeat Purchase</span>
-                   <div className="flex items-baseline">
-                    <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crRepeatPurchase)}</span>
-                    {renderDelta(results.scenarios.crRepeatPurchase - results.base.crRepeatPurchase, formatPercentage, true)}
-                  </div>
+                <div className="pl-6 text-sm text-muted-foreground space-y-1">
+                    <div className="flex justify-between"><span>Ads Budget</span><span>{formatCurrency(results.scenarios.totalAdsBudget)}</span></div>
+                    <div className="flex justify-between"><span>OPEX + Scenarios</span><span>{formatCurrency(results.scenarios.marketingOpexFixed)}</span></div>
                 </div>
-            </div>
 
-          </CardContent>
-        </Card>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                    <p>Blended Cost Per Session</p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>Total Ads Budget / Total Sessions (Paid + Organic)</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </div>
+                    <div className="flex items-baseline">
+                        <p className="font-headline text-xl font-bold">
+                            {formatCurrency(results.scenarios.cpSessionBlended)}
+                        </p>
+                        {renderDelta(results.scenarios.cpSessionBlended - results.base.cpSessionBlended, formatCurrency, false)}
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                    <p>Total Sessions</p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>Total Paid Sessions (from all ad channels) + Organic Sessions</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </div>
+                    <div className="flex items-baseline">
+                        <p className="font-headline text-xl font-bold">
+                            {formatNumber(results.scenarios.totalSessions)}
+                        </p>
+                        {renderDelta(results.scenarios.totalSessions - results.base.totalSessions, formatNumber, true)}
+                    </div>
+                </div>
+                <div className="pl-6 text-sm text-muted-foreground space-y-1">
+                    <div className="flex justify-between"><span>Paid Sessions</span><span>{formatNumber(results.scenarios.paidSessions)}</span></div>
+                    <div className="flex justify-between"><span>Organic Sessions</span><span>{formatNumber(results.scenarios.organicSessions)}</span></div>
+                </div>
+
+                <Separator />
+                
+                <div className="flex justify-between items-center">
+                <p>Blended Average Order Value</p>
+                <div className="flex items-baseline">
+                    <p className="font-headline text-xl font-bold">{formatCurrency(results.scenarios.blendedAov)}</p>
+                    {renderDelta(results.scenarios.blendedAov - results.base.blendedAov, formatCurrency, true)}
+                </div>
+                </div>
+
+                <div className="pl-6 text-sm text-muted-foreground space-y-1">
+                    <div className="flex justify-between items-center">
+                    <span>First Purchase</span>
+                    <div className="flex items-baseline">
+                        <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovFirstPurchase)}</span>
+                        {renderDelta(results.scenarios.aovFirstPurchase - results.base.aovFirstPurchase, formatCurrency, true)}
+                    </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                    <span>Repeat Purchase</span>
+                    <div className="flex items-baseline">
+                        <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovRepeatPurchase)}</span>
+                        {renderDelta(results.scenarios.aovRepeatPurchase - results.base.aovRepeatPurchase, formatCurrency, true)}
+                    </div>
+                    </div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                    <p>Blended Conversion Rate</p>
+                    <div className="flex items-baseline">
+                        <p className="font-headline text-xl font-bold">{formatPercentage(results.scenarios.blendedCr)}</p>
+                        {renderDelta(results.scenarios.blendedCr - results.base.blendedCr, formatPercentage, true)}
+                    </div>
+                </div>
+
+                <div className="pl-6 text-sm text-muted-foreground space-y-1">
+                    <div className="flex justify-between items-center">
+                    <span>First Purchase</span>
+                    <div className="flex items-baseline">
+                        <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crFirstPurchase)}</span>
+                        {renderDelta(results.scenarios.crFirstPurchase - results.base.crFirstPurchase, formatPercentage, true)}
+                    </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                    <span>Repeat Purchase</span>
+                    <div className="flex items-baseline">
+                        <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crRepeatPurchase)}</span>
+                        {renderDelta(results.scenarios.crRepeatPurchase - results.base.crRepeatPurchase, formatPercentage, true)}
+                    </div>
+                    </div>
+                </div>
+
+            </CardContent>
+            </Card>
+
+            <Card className="shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="font-headline text-2xl">Projections</CardTitle>
+                    <Button variant="outline" size="sm" onClick={handleExport}>
+                        <FileDown className="mr-2 h-4 w-4"/>
+                        Export to CSV
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <ProjectionsChart base={results.base} scenarios={results.scenarios} currency={currency} />
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </TooltipProvider>
   );
 }
+
