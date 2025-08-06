@@ -632,7 +632,7 @@ export function ProfitCalculator() {
                     <CardTitle className="font-headline text-2xl">Projections</CardTitle>
                     <Button variant="outline" size="sm" onClick={handleExport}>
                         <FileDown className="mr-2 h-4 w-4"/>
-                        Export to CSV
+                        Export to XLSX
                     </Button>
                 </CardHeader>
                 <CardContent>
