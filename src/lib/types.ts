@@ -59,29 +59,30 @@ export type InputField = {
     subGroup?: 'prospecting' | 'remarketing';
     isCurrency?: boolean;
     isPercentage?: boolean;
+    tooltip?: string;
 }
 
 export const inputFields: InputField[] = [
     // Meta Prospecting
-    { name: 'metaProspectingBudget', label: 'Budget', group: 'meta', subGroup: 'prospecting', isCurrency: true },
-    { name: 'metaProspectingCpc', label: 'CPC', group: 'meta', subGroup: 'prospecting', isCurrency: true },
-    { name: 'metaProspectingBounceRate', label: 'Bounce Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true },
-    { name: 'metaProspectingConversionRate', label: 'Conversion Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true },
+    { name: 'metaProspectingBudget', label: 'Budget', group: 'meta', subGroup: 'prospecting', isCurrency: true, tooltip: "The total amount you plan to spend on this specific ad channel." },
+    { name: 'metaProspectingCpc', label: 'CPC', group: 'meta', subGroup: 'prospecting', isCurrency: true, tooltip: "Cost Per Click: The average amount you pay for a single click on your ad." },
+    { name: 'metaProspectingBounceRate', label: 'Bounce Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true, tooltip: "The percentage of users who clicked the ad but left your site without taking any action." },
+    { name: 'metaProspectingConversionRate', label: 'Conversion Rate', group: 'meta', subGroup: 'prospecting', isPercentage: true, tooltip: "The percentage of sessions from this channel that result in a purchase." },
     // Meta Remarketing
-    { name: 'metaRemarketingBudget', label: 'Budget', group: 'meta', subGroup: 'remarketing', isCurrency: true },
-    { name: 'metaRemarketingCpc', label: 'CPC', group: 'meta', subGroup: 'remarketing', isCurrency: true },
-    { name: 'metaRemarketingBounceRate', label: 'Bounce Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true },
-    { name: 'metaRemarketingConversionRate', label: 'Conversion Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true },
+    { name: 'metaRemarketingBudget', label: 'Budget', group: 'meta', subGroup: 'remarketing', isCurrency: true, tooltip: "The total amount you plan to spend on this specific ad channel." },
+    { name: 'metaRemarketingCpc', label: 'CPC', group: 'meta', subGroup: 'remarketing', isCurrency: true, tooltip: "Cost Per Click: The average amount you pay for a single click on your ad." },
+    { name: 'metaRemarketingBounceRate', label: 'Bounce Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true, tooltip: "The percentage of users who clicked the ad but left your site without taking any action." },
+    { name: 'metaRemarketingConversionRate', label: 'Conversion Rate', group: 'meta', subGroup: 'remarketing', isPercentage: true, tooltip: "The percentage of sessions from this channel that result in a purchase." },
     // Google Prospecting
-    { name: 'googleProspectingBudget', label: 'Budget', group: 'google', subGroup: 'prospecting', isCurrency: true },
-    { name: 'googleProspectingCpc', label: 'CPC', group: 'google', subGroup: 'prospecting', isCurrency: true },
-    { name: 'googleProspectingBounceRate', label: 'Bounce Rate', group: 'google', subGroup: 'prospecting', isPercentage: true },
-    { name: 'googleProspectingConversionRate', label: 'Conversion Rate', group: 'google', subGroup: 'prospecting', isPercentage: true },
+    { name: 'googleProspectingBudget', label: 'Budget', group: 'google', subGroup: 'prospecting', isCurrency: true, tooltip: "The total amount you plan to spend on this specific ad channel." },
+    { name: 'googleProspectingCpc', label: 'CPC', group: 'google', subGroup: 'prospecting', isCurrency: true, tooltip: "Cost Per Click: The average amount you pay for a single click on your ad." },
+    { name: 'googleProspectingBounceRate', label: 'Bounce Rate', group: 'google', subGroup: 'prospecting', isPercentage: true, tooltip: "The percentage of users who clicked the ad but left your site without taking any action." },
+    { name: 'googleProspectingConversionRate', label: 'Conversion Rate', group: 'google', subGroup: 'prospecting', isPercentage: true, tooltip: "The percentage of sessions from this channel that result in a purchase." },
     // Google Remarketing
-    { name: 'googleRemarketingBudget', label: 'Budget', group: 'google', subGroup: 'remarketing', isCurrency: true },
-    { name: 'googleRemarketingCpc', label: 'CPC', group: 'google', subGroup: 'remarketing', isCurrency: true },
-    { name: 'googleRemarketingBounceRate', label: 'Bounce Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
-    { name: 'googleRemarketingConversionRate', label: 'Conversion Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
+    { name: 'googleRemarketingBudget', label: 'Budget', group: 'google', subGroup: 'remarketing', isCurrency: true, tooltip: "The total amount you plan to spend on this specific ad channel." },
+    { name: 'googleRemarketingCpc', label: 'CPC', group: 'google', subGroup: 'remarketing', isCurrency: true, tooltip: "Cost Per Click: The average amount you pay for a single click on your ad." },
+    { name: 'googleRemarketingBounceRate', label: 'Bounce Rate', group: 'google', subGroup: 'remarketing', isPercentage: true, tooltip: "The percentage of users who clicked the ad but left your site without taking any action." },
+    { name: 'googleRemarketingConversionRate', label: 'Conversion Rate', group: 'google', subGroup: 'remarketing', isPercentage: true, tooltip: "The percentage of sessions from this channel that result in a purchase." },
     
     // Organic
     { name: 'organicSessions', label: 'Organic Sessions', group: 'organic' },

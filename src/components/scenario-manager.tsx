@@ -321,21 +321,23 @@ export function ScenarioManager({
                     </div>
                     <Separator className="my-4" />
                     <div className="flex flex-col md:flex-row gap-4 items-start">
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-2">
                         <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Impacts</Label>
-                        <div className="flex flex-wrap gap-2 pt-1">
+                        <div className="flex flex-col gap-1 pt-1">
                             {Object.entries(scenario.impact).map(([key, impact]) => {
                                 if (!impact || !impact.value) return null;
                                 const impactValue = impact.value[currentEstimateLevel];
                                 const metric = impactableMetrics.find(m => m.name === key);
                                 if (impactValue === undefined || impactValue === 0 || !metric) return null;
                                 return (
-                                    <Badge key={key} variant="secondary" className="font-mono">
-                                        {metric.label}:{' '}
+                                    <div key={key} className="flex justify-between items-center text-sm">
+                                      <span className="text-muted-foreground">{metric.label}:</span>
+                                      <Badge variant="secondary" className="font-mono">
                                         <span className={impactValue > 0 ? 'text-green-500' : 'text-destructive'}>
                                             {formatImpact(impactValue, impact.type)}
                                         </span>
-                                    </Badge>
+                                      </Badge>
+                                    </div>
                                 )
                             })}
                         </div>

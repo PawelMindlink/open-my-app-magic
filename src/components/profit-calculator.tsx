@@ -253,7 +253,7 @@ export function ProfitCalculator() {
     const colorClass = (isPositive && isGood) || (!isPositive && !isGood) ? 'text-green-500' : 'text-destructive';
     const Icon = isPositive ? ArrowUp : ArrowDown;
     return (
-      <span className={cn("flex items-center text-sm font-semibold ml-2 shrink-0", colorClass)}>
+      <span className={cn("flex items-center text-sm font-semibold shrink-0", colorClass)}>
         <Icon className="w-4 h-4 mr-1" />
         {format(Math.abs(delta))}
       </span>
@@ -262,9 +262,19 @@ export function ProfitCalculator() {
 
   const renderInputGroup = (group: string, side: 'prospecting' | 'remarketing') => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-        {inputFields.filter(f => f.group === group && f.subGroup === side).map(({ name, label, isCurrency, isPercentage }) => (
+        {inputFields.filter(f => f.group === group && f.subGroup === side).map(({ name, label, isCurrency, isPercentage, tooltip }) => (
           <div key={name} className="flex flex-col space-y-2 justify-end">
-            <Label htmlFor={name} className="font-headline h-10 flex items-end">{label}</Label>
+             <div className="h-10 flex items-end">
+               <Label htmlFor={name} className="font-headline flex items-center gap-2">
+                 {label}
+                 {tooltip && (
+                   <Tooltip>
+                     <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
+                     <TooltipContent><p>{tooltip}</p></TooltipContent>
+                   </Tooltip>
+                 )}
+               </Label>
+             </div>
             <div className="relative">
               {isCurrency && (
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -371,21 +381,25 @@ export function ProfitCalculator() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <h5 className="font-semibold text-base">Prospecting</h5>
-                                <Tooltip>
+                                <h5 className="font-semibold text-base flex items-center gap-2">
+                                  Prospecting
+                                  <Tooltip>
                                     <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
                                     <TooltipContent><p>Ads targeting users who have not previously interacted with your brand.</p></TooltipContent>
-                                </Tooltip>
+                                  </Tooltip>
+                                </h5>
                             </div>
                             {renderInputGroup('meta', 'prospecting')}
                         </div>
                         <div>
                            <div className="flex items-center gap-2 mb-3">
-                                <h5 className="font-semibold text-base">Remarketing</h5>
-                                <Tooltip>
+                                <h5 className="font-semibold text-base flex items-center gap-2">
+                                  Remarketing
+                                  <Tooltip>
                                     <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
                                     <TooltipContent><p>Ads targeting users who have previously visited your website or engaged with your content.</p></TooltipContent>
-                                </Tooltip>
+                                  </Tooltip>
+                                </h5>
                            </div>
                            {renderInputGroup('meta', 'remarketing')}
                         </div>
@@ -407,11 +421,23 @@ export function ProfitCalculator() {
                   <div className="space-y-6">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
                         <div>
-                           <h5 className="font-semibold text-base mb-3">Prospecting</h5>
+                           <h5 className="font-semibold text-base mb-3 flex items-center gap-2">
+                            Prospecting
+                             <Tooltip>
+                                <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
+                                <TooltipContent><p>Ads targeting users who have not previously interacted with your brand.</p></TooltipContent>
+                              </Tooltip>
+                           </h5>
                           {renderInputGroup('google', 'prospecting')}
                         </div>
                         <div>
-                           <h5 className="font-semibold text-base mb-3">Remarketing</h5>
+                           <h5 className="font-semibold text-base mb-3 flex items-center gap-2">
+                            Remarketing
+                            <Tooltip>
+                                <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
+                                <TooltipContent><p>Ads targeting users who have previously visited your website or engaged with your content.</p></TooltipContent>
+                            </Tooltip>
+                           </h5>
                            {renderInputGroup('google', 'remarketing')}
                         </div>
                      </div>
@@ -484,7 +510,9 @@ export function ProfitCalculator() {
                         )}>
                             {formatCurrency(results.scenarios.marketingProfit)}
                         </p>
-                        {renderDelta(results.scenarios.marketingProfit - results.base.marketingProfit, formatCurrency, true)}
+                        <div className="ml-2">
+                            {renderDelta(results.scenarios.marketingProfit - results.base.marketingProfit, formatCurrency, true)}
+                        </div>
                     </div>
                 </div>
                 
@@ -496,7 +524,9 @@ export function ProfitCalculator() {
                         <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
                         </TooltipTrigger>
                         <TooltipContent>
-                        <p>Gross Profit - Total Ads Budget. Shows profit before fixed costs.</p>
+                          <p className="max-w-xs">
+                            Gross Profit - Total Ads Budget. In performance marketing, ad spend is treated as a variable acquisition cost, distinct from COGS which is a variable transactional cost. This margin shows the profit generated to cover fixed costs.
+                          </p>
                         </TooltipContent>
                     </Tooltip>
                     </div>
