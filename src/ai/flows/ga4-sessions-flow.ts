@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { run } from 'genkit/flow';
+import { run } from 'genkit';
 
 const Ga4SessionsInputSchema = z.object({
   propertyId: z.string().describe('The GA4 Property ID, e.g., "123456789"'),
