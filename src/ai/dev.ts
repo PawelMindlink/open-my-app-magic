@@ -1,2 +1,3 @@
-// Flows will be imported for their side effects in this file.
-import './flows/ga4-sessions-flow';
+
+// This file is intentionally blank.
+// Genkit flows are automatically discovered.
