@@ -8,7 +8,7 @@ import { auth } from '@/lib/firebase';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: () => Promise<void>;
+  signIn: () => void;
   signOut: () => Promise<void>;
   getToken: () => Promise<string | null>;
 }
@@ -19,8 +19,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // This effect is the single source of truth for the user's auth state.
   // onAuthStateChanged handles all cases, including startup and redirect returns.
+  // It is the single source of truth for the user's auth state.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -31,18 +31,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async () => {
-    setLoading(true);
+  const signIn = () => {
     const provider = new GoogleAuthProvider();
     // Request access to the user's Google Analytics data.
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
-    try {
-      // signInWithRedirect is more robust in complex environments than signInWithPopup.
-      await signInWithRedirect(auth, provider);
-    } catch (error) {
-      console.error("Error during sign-in redirect:", error);
-      setLoading(false); // Ensure loading is false on error
-    }
+    signInWithRedirect(auth, provider).catch(error => {
+        console.error("Error during sign-in redirect initiation:", error);
+        setLoading(false); // Ensure loading is false on error
+    });
   };
 
   const signOut = async () => {
