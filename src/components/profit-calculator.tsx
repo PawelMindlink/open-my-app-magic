@@ -320,7 +320,7 @@ export function ProfitCalculator() {
           </div>
         ))}
     </div>
-  )
+  );
 
 
   return (
@@ -398,7 +398,7 @@ export function ProfitCalculator() {
               </div>
 
               <Separator className="my-8" />
-              <h3 className="font-headline text-xl mb-4 text-primary/80">Organic & Profitability</h3>
+              <h3 className="font-headline text-xl mb-4 text-primary/80">Organic &amp; Profitability</h3>
                <div className="space-y-6 p-4 border rounded-lg">
                 <div>
                   <h4 className="font-headline text-lg mb-4">Organic</h4>
@@ -433,7 +433,7 @@ export function ProfitCalculator() {
         </div>
 
         <div className="lg:col-span-2 space-y-8">
-            <Card className="shadow-lg sticky top-8">
+            <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Calculated Results</CardTitle>
             </CardHeader>
@@ -644,4 +644,3 @@ export function ProfitCalculator() {
     </TooltipProvider>
   );
 }
-
