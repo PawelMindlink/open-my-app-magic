@@ -477,7 +477,7 @@ export function ProfitCalculator() {
                         </TooltipContent>
                     </Tooltip>
                     </div>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <p className={cn(
                             "font-headline text-3xl font-bold transition-colors duration-300",
                             results.scenarios.marketingProfit < 0 ? 'text-destructive' : 'text-green-500'
@@ -487,6 +487,28 @@ export function ProfitCalculator() {
                         {renderDelta(results.scenarios.marketingProfit - results.base.marketingProfit, formatCurrency, true)}
                     </div>
                 </div>
+                
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                    <p>Contribution Margin</p>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                        <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                        <p>Gross Profit - Total Ads Budget. Shows profit before fixed costs.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    </div>
+                     <div className="flex items-baseline ml-2">
+                        <p className="font-headline text-xl font-bold">
+                            {formatCurrency(results.scenarios.contributionMargin)}
+                        </p>
+                        {renderDelta(results.scenarios.contributionMargin - results.base.contributionMargin, formatCurrency, true)}
+                    </div>
+                </div>
+
+                <Separator/>
                 
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -543,7 +565,7 @@ export function ProfitCalculator() {
                         </TooltipContent>
                     </Tooltip>
                     </div>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <p className="font-headline text-xl font-bold">
                             {formatCurrency(results.scenarios.totalMarketingCost)}
                         </p>
@@ -567,7 +589,7 @@ export function ProfitCalculator() {
                         </TooltipContent>
                     </Tooltip>
                     </div>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <p className="font-headline text-xl font-bold">
                             {formatCurrency(results.scenarios.cpSessionBlended)}
                         </p>
@@ -587,7 +609,7 @@ export function ProfitCalculator() {
                         </TooltipContent>
                     </Tooltip>
                     </div>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <p className="font-headline text-xl font-bold">
                             {formatNumber(results.scenarios.totalSessions)}
                         </p>
@@ -603,7 +625,7 @@ export function ProfitCalculator() {
                 
                 <div className="flex justify-between items-center">
                 <p>Blended Average Order Value</p>
-                <div className="flex items-baseline">
+                <div className="flex items-baseline ml-2">
                     <p className="font-headline text-xl font-bold">{formatCurrency(results.scenarios.blendedAov)}</p>
                     {renderDelta(results.scenarios.blendedAov - results.base.blendedAov, formatCurrency, true)}
                 </div>
@@ -612,14 +634,14 @@ export function ProfitCalculator() {
                 <div className="pl-6 text-sm text-muted-foreground space-y-1">
                     <div className="flex justify-between items-center">
                     <span>First Purchase</span>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovFirstPurchase)}</span>
                         {renderDelta(results.scenarios.aovFirstPurchase - results.base.aovFirstPurchase, formatCurrency, true)}
                     </div>
                     </div>
                     <div className="flex justify-between items-center">
                     <span>Repeat Purchase</span>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <span className="font-semibold text-foreground">{formatCurrency(results.scenarios.aovRepeatPurchase)}</span>
                         {renderDelta(results.scenarios.aovRepeatPurchase - results.base.aovRepeatPurchase, formatCurrency, true)}
                     </div>
@@ -628,7 +650,7 @@ export function ProfitCalculator() {
                 
                 <div className="flex justify-between items-center">
                     <p>Blended Conversion Rate</p>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <p className="font-headline text-xl font-bold">{formatPercentage(results.scenarios.blendedCr)}</p>
                         {renderDelta(results.scenarios.blendedCr - results.base.blendedCr, formatPercentage, true)}
                     </div>
@@ -637,14 +659,14 @@ export function ProfitCalculator() {
                 <div className="pl-6 text-sm text-muted-foreground space-y-1">
                     <div className="flex justify-between items-center">
                     <span>First Purchase</span>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crFirstPurchase)}</span>
                         {renderDelta(results.scenarios.crFirstPurchase - results.base.crFirstPurchase, formatPercentage, true)}
                     </div>
                     </div>
                     <div className="flex justify-between items-center">
                     <span>Repeat Purchase</span>
-                    <div className="flex items-baseline">
+                    <div className="flex items-baseline ml-2">
                         <span className="font-semibold text-foreground">{formatPercentage(results.scenarios.crRepeatPurchase)}</span>
                         {renderDelta(results.scenarios.crRepeatPurchase - results.base.crRepeatPurchase, formatPercentage, true)}
                     </div>
@@ -667,3 +689,5 @@ export function ProfitCalculator() {
     </TooltipProvider>
   );
 }
+
+    
