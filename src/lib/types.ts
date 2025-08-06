@@ -85,20 +85,20 @@ export const inputFields: InputField[] = [
     { name: 'googleRemarketingConversionRate', label: 'Conversion Rate', group: 'google', subGroup: 'remarketing', isPercentage: true, tooltip: "The percentage of sessions from this channel that result in a purchase." },
     
     // Organic
-    { name: 'organicSessions', label: 'Organic Sessions', group: 'organic' },
-    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'organic', isPercentage: true },
+    { name: 'organicSessions', label: 'Organic Sessions', group: 'organic', tooltip: "Total sessions from unpaid sources like SEO, direct visits, and social media." },
+    { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'organic', isPercentage: true, tooltip: "The percentage of visitors from organic channels who make their first purchase." },
     
     // First Purchase
-    { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'first-purchase', isCurrency: true },
-    { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'first-purchase', isPercentage: true },
+    { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'first-purchase', isCurrency: true, tooltip: "Average Order Value. The average amount a new customer spends in their first transaction." },
+    { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'first-purchase', isPercentage: true, tooltip: "The percentage of revenue from a first purchase that is left after subtracting the Cost of Goods Sold (COGS)." },
     
     // Repeat Purchase
-    { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'repeat-purchase', isCurrency: true },
-    { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'repeat-purchase', isPercentage: true },
-    { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'repeat-purchase', isPercentage: true },
+    { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'repeat-purchase', isCurrency: true, tooltip: "Average Order Value. The average amount a returning customer spends in a single transaction." },
+    { name: 'gmRepeatPurchase', label: 'Gross Margin (Repeat Purchase)', group: 'repeat-purchase', isPercentage: true, tooltip: "The percentage of revenue from a repeat purchase that is left after subtracting the Cost of Goods Sold (COGS)." },
+    { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'repeat-purchase', isPercentage: true, tooltip: "The percentage of first-time buyers who come back to make a second purchase." },
 
     // OPEX
-    { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'opex', isCurrency: true },
+    { name: 'marketingOpexFixed', label: 'Fixed Marketing OPEX', group: 'opex', isCurrency: true, tooltip: "Fixed operational expenses for marketing, such as salaries, software subscriptions, etc. This does not include ad spend." },
 ];
 
 export const impactableMetrics: InputField[] = [
@@ -118,12 +118,15 @@ export const impactableMetrics: InputField[] = [
     { name: 'googleRemarketingCpc', label: 'Google Remarketing CPC', group: 'google', subGroup: 'remarketing', isCurrency: true },
     { name: 'googleRemarketingBounceRate', label: 'Google Remarketing Bounce Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
     { name: 'googleRemarketingConversionRate', label: 'Google Remarketing Conversion Rate', group: 'google', subGroup: 'remarketing', isPercentage: true },
+    
     // Organic
     { name: 'organicSessions', label: 'Organic Sessions', group: 'organic' },
     { name: 'crFirstPurchase', label: 'Organic First Purchase CR', group: 'organic', isPercentage: true },
+    
     // First Purchase
     { name: 'aovFirstPurchase', label: 'AOV (First Purchase)', group: 'first-purchase', isCurrency: true },
     { name: 'gmFirstPurchase', label: 'Gross Margin (First Purchase)', group: 'first-purchase', isPercentage: true },
+    
     // Repeat Purchase
     { name: 'crRepeatPurchase', label: 'Repeat Purchase CR', group: 'repeat-purchase', isPercentage: true },
     { name: 'aovRepeatPurchase', label: 'AOV (Repeat Purchase)', group: 'repeat-purchase', isCurrency: true },

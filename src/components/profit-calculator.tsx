@@ -303,9 +303,17 @@ export function ProfitCalculator() {
 
   const renderGeneralInputGroup = (group: string) => (
      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-        {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage }) => (
+        {inputFields.filter(f => f.group === group).map(({ name, label, isCurrency, isPercentage, tooltip }) => (
           <div key={name} className="flex flex-col space-y-2 justify-end">
-            <Label htmlFor={name} className="font-headline h-10 flex items-end">{label}</Label>
+            <Label htmlFor={name} className="font-headline h-10 flex items-center gap-2">
+                {label}
+                {tooltip && (
+                   <Tooltip>
+                     <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
+                     <TooltipContent><p>{tooltip}</p></TooltipContent>
+                   </Tooltip>
+                 )}
+            </Label>
             <div className="relative">
               {isCurrency && (
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
@@ -709,6 +717,7 @@ export function ProfitCalculator() {
             <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">Projections</CardTitle>
+                    <CardDescription>Compare your baseline with the scenario-adjusted forecast.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ProjectionsChart base={results.base} scenarios={results.scenarios} currency={currency} />
