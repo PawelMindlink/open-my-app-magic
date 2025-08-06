@@ -23,25 +23,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // This handles the redirect result after signing in.
     const handleRedirectResult = async () => {
       try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          // User has successfully signed in.
-          setUser(result.user);
-        }
+        await getRedirectResult(auth);
+        // The onAuthStateChanged listener will handle setting the user and loading state.
       } catch (error) {
         console.error("Error getting redirect result:", error);
-      } finally {
-        setLoading(false);
       }
+      // We don't set loading to false here to avoid race conditions.
+      // onAuthStateChanged is the single source of truth for the auth state.
     };
 
     handleRedirectResult();
 
-    // This handles keeping the user logged in across sessions.
+    // This handles keeping the user logged in across sessions and after redirects.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user); // This can be null if signed out.
-      // We set loading to false here as well, in case redirect result is null.
-      setLoading(false);
+      setLoading(false); // This is the reliable point to end the loading state.
     });
     
     return () => unsubscribe();
