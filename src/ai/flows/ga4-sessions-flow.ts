@@ -9,7 +9,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { google } from 'googleapis';
+import { defineTool, genkitPlugin } from 'genkit';
+import { GoogleAuth } from 'google-auth-library';
+
 
 const Ga4SessionsInputSchema = z.object({
   propertyId: z.string().describe('The GA4 Property ID, e.g., "123456789"'),
@@ -23,32 +25,62 @@ const Ga4SessionsOutputSchema = z.object({
 });
 export type Ga4SessionsOutput = z.infer<typeof Ga4SessionsOutputSchema>;
 
+// Define a tool that can provide an authenticated Google Auth client
+const ga4DataApi = defineTool(
+    {
+        name: 'ga4DataApi',
+        description: 'Google Analytics Data API client',
+    },
+    async () => new GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+    })
+);
 
 const getGa4SessionsFlow = ai.defineFlow(
   {
     name: 'getGa4SessionsFlow',
     inputSchema: Ga4SessionsInputSchema,
     outputSchema: Ga4SessionsOutputSchema,
+    auth: (input) => {
+        return {
+            // This policy allows all requests to the flow. 
+            // You can also add more specific authorization logic here.
+            '': true, 
+        }
+    }
   },
   async ({ propertyId, startDate, endDate }) => {
     try {
-      const auth = new google.auth.GoogleAuth({
-        scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
-      });
-      const analyticsData = google.analyticsdata({
-        version: 'v1beta',
-        auth,
-      });
+        const auth = await ga4DataApi();
+        const accessToken = await auth.getAccessToken();
 
-      const response = await analyticsData.properties.runReport({
-        property: `properties/${propertyId}`,
-        requestBody: {
-          dateRanges: [{ startDate, endDate }],
-          metrics: [{ name: 'sessions' }],
-        },
-      });
+        const response = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+                dateRanges: [{ startDate, endDate }],
+                metrics: [{ name: 'sessions' }],
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('GA4 API Error Response:', data);
+            const errorDetails = data.error || {};
+             if (errorDetails.code === 403) {
+                throw new Error("Permission denied. Ensure the service account has 'Viewer' access to the GA4 property.");
+            }
+            if (errorDetails.code === 400) {
+                throw new Error(`Invalid request. Check if the Property ID '${propertyId}' is correct.`);
+            }
+            throw new Error(errorDetails.message || 'Failed to fetch data from Google Analytics.');
+        }
       
-      const rows = response.data.rows || [];
+      const rows = data.rows || [];
       if (rows.length > 0 && rows[0].metricValues && rows[0].metricValues.length > 0) {
         const totalSessions = parseInt(rows[0].metricValues[0].value || '0', 10);
         return { totalSessions };
@@ -59,16 +91,7 @@ const getGa4SessionsFlow = ai.defineFlow(
         console.error('GA4 API Error:', error.message);
         // It's helpful to log the full error for debugging in the server logs
         console.error(error);
-        
-        // Provide a more user-friendly error message
-        if (error.code === 403) {
-            throw new Error("Permission denied. Ensure the service account has 'Viewer' access to the GA4 property.");
-        }
-        if (error.code === 400) {
-            throw new Error(`Invalid request. Check if the Property ID '${propertyId}' is correct.`);
-        }
-        
-        throw new Error('Failed to fetch data from Google Analytics. Please check your configuration and permissions.');
+        throw new Error(error.message || 'Failed to fetch data from Google Analytics. Please check your configuration and permissions.');
     }
   }
 );
