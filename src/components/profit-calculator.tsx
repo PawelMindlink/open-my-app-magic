@@ -328,21 +328,30 @@ export function ProfitCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-3 space-y-8">
           <Card className="shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between">
+             <CardHeader className="flex flex-row items-start justify-between">
                 <div>
                   <CardTitle className="font-headline text-2xl">Business Inputs</CardTitle>
+                  <CardDescription className="mt-2">
+                    All inputs should be based on the same time period (e.g., one month).
+                  </CardDescription>
                 </div>
-                <div className="w-32">
-                  <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
-                      <SelectTrigger>
-                          <SelectValue placeholder="Currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="PLN">PLN (zł)</SelectItem>
-                      </SelectContent>
-                  </Select>
+                <div className="flex flex-col items-end space-y-2 shrink-0">
+                    <div className="w-32">
+                        <Select value={currency} onValueChange={(val) => setCurrency(val as Currency)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="USD">USD ($)</SelectItem>
+                                <SelectItem value="EUR">EUR (€)</SelectItem>
+                                <SelectItem value="PLN">PLN (zł)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <Button variant="outline" size="sm" onClick={handleExport}>
+                        <FileDown className="mr-2 h-4 w-4"/>
+                        Export to XLSX
+                    </Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -361,11 +370,23 @@ export function ProfitCalculator() {
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
                         <div>
-                            <h5 className="font-semibold text-base mb-3">Prospecting</h5>
+                            <div className="flex items-center gap-2 mb-3">
+                                <h5 className="font-semibold text-base">Prospecting</h5>
+                                <Tooltip>
+                                    <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
+                                    <TooltipContent><p>Ads targeting users who have not previously interacted with your brand.</p></TooltipContent>
+                                </Tooltip>
+                            </div>
                             {renderInputGroup('meta', 'prospecting')}
                         </div>
                         <div>
-                           <h5 className="font-semibold text-base mb-3">Remarketing</h5>
+                           <div className="flex items-center gap-2 mb-3">
+                                <h5 className="font-semibold text-base">Remarketing</h5>
+                                <Tooltip>
+                                    <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
+                                    <TooltipContent><p>Ads targeting users who have previously visited your website or engaged with your content.</p></TooltipContent>
+                                </Tooltip>
+                           </div>
                            {renderInputGroup('meta', 'remarketing')}
                         </div>
                     </div>
@@ -401,7 +422,13 @@ export function ProfitCalculator() {
               <h3 className="font-headline text-xl mb-4 text-primary/80">Organic &amp; Profitability</h3>
                <div className="space-y-6 p-4 border rounded-lg">
                 <div>
-                  <h4 className="font-headline text-lg mb-4">Organic</h4>
+                   <div className="flex items-center gap-2 mb-4">
+                        <h4 className="font-headline text-lg">Organic</h4>
+                        <Tooltip>
+                            <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
+                            <TooltipContent><p>Traffic from unpaid sources like SEO, direct visits, email, and social media.</p></TooltipContent>
+                        </Tooltip>
+                    </div>
                   {renderGeneralInputGroup('organic')}
                 </div>
                 <Separator/>
@@ -446,7 +473,7 @@ export function ProfitCalculator() {
                         <button><HelpCircle className="w-4 h-4 text-muted-foreground" /></button>
                         </TooltipTrigger>
                         <TooltipContent>
-                        <p>Total Gross Profit - Total Marketing Cost</p>
+                        <p>Total Gross Profit - (Total Ads Budget + Fixed OPEX + Scenario Costs)</p>
                         </TooltipContent>
                     </Tooltip>
                     </div>
@@ -470,7 +497,7 @@ export function ProfitCalculator() {
                         </TooltipTrigger>
                         <TooltipContent>
                         <p>The additional Contribution Margin generated by the active scenarios.</p>
-                        <p className="text-sm text-muted-foreground">Formula: Contribution Margin (Scenarios) - Contribution Margin (Base)</p>
+                        <p className="text-sm text-muted-foreground">Contribution Margin = Gross Profit - Ad Spend</p>
                         </TooltipContent>
                     </Tooltip>
                     </div>
@@ -628,12 +655,8 @@ export function ProfitCalculator() {
             </Card>
 
             <Card className="shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader>
                     <CardTitle className="font-headline text-2xl">Projections</CardTitle>
-                    <Button variant="outline" size="sm" onClick={handleExport}>
-                        <FileDown className="mr-2 h-4 w-4"/>
-                        Export to XLSX
-                    </Button>
                 </CardHeader>
                 <CardContent>
                     <ProjectionsChart base={results.base} scenarios={results.scenarios} currency={currency} />
