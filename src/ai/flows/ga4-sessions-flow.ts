@@ -10,6 +10,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { run } from 'genkit';
+import {getAuth} from "firebase-admin/auth";
+import {UserCredential} from "firebase/auth";
 
 const Ga4SessionsInputSchema = z.object({
   propertyId: z.string().describe('The GA4 Property ID, e.g., "123456789"'),
@@ -29,17 +31,19 @@ const getGa4SessionsFlow = ai.defineFlow(
     name: 'getGa4SessionsFlow',
     inputSchema: Ga4SessionsInputSchema,
     outputSchema: Ga4SessionsOutputSchema,
+    auth: async (auth: UserCredential) => {
+        // This is a placeholder for a real auth implementation
+        if (!auth.user) {
+            throw new Error("Authentication is required.");
+        }
+    }
   },
   async ({ propertyId, startDate, endDate }, context) => {
 
-    if (!context?.authenticated) {
+    const accessToken = await context.auth?.user.getIdToken();
+
+    if (!accessToken) {
         throw new Error("Authentication is required to access Google Analytics data.");
-    }
-    
-    // Use the authenticated fetch provided by Genkit context
-    const fetch = context.auth?.fetch;
-    if (!fetch) {
-        throw new Error("Could not get an authenticated fetch instance.");
     }
 
     try {
@@ -47,6 +51,7 @@ const getGa4SessionsFlow = ai.defineFlow(
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
                 dateRanges: [{ startDate, endDate }],
@@ -60,7 +65,7 @@ const getGa4SessionsFlow = ai.defineFlow(
             console.error('GA4 API Error Response:', data);
             const errorDetails = data.error || {};
              if (errorDetails.code === 403) {
-                throw new Error("Permission denied. Ensure the service account has 'Viewer' access to the GA4 property.");
+                throw new Error("Permission denied. Ensure the authenticated user has 'Viewer' access to the GA4 property.");
             }
             if (errorDetails.code === 400) {
                 throw new Error(`Invalid request. Check if the Property ID '${propertyId}' is correct.`);
@@ -89,5 +94,6 @@ export async function getGa4Sessions(input: Ga4SessionsInput): Promise<Ga4Sessio
   // To call a flow from a server component, we need to wrap it in `run`
   // and provide a placeholder for the auth object. The actual authentication
   // will be handled by the Genkit plugin based on the environment.
-  return run(getGa4SessionsFlow, input, { auth: {} });
+  // This is a temporary setup until we have a full login UI.
+  return run(getGa4SessionsFlow, input, { auth: {user: {getIdToken: async () => ''}} });
 }
