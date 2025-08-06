@@ -474,8 +474,8 @@ export function ProfitCalculator() {
               <Separator className="my-8" />
               <h3 className="font-headline text-xl mb-4 text-primary/80">Organic &amp; Profitability</h3>
                <div className="space-y-6 p-4 border rounded-lg">
-                <div>
-                   <div className="flex items-center gap-2 mb-4">
+                <div className="space-y-4">
+                   <div className="flex items-center gap-2">
                         <h4 className="font-headline text-lg">Organic</h4>
                         <Tooltip>
                             <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
@@ -748,5 +748,7 @@ export function ProfitCalculator() {
     </>
   );
 }
+
+    
 
     
