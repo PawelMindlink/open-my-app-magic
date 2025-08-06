@@ -9,9 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { defineTool, genkitPlugin } from 'genkit';
-import { GoogleAuth } from 'google-auth-library';
-
+import { run } from 'genkit/flow';
 
 const Ga4SessionsInputSchema = z.object({
   propertyId: z.string().describe('The GA4 Property ID, e.g., "123456789"'),
@@ -25,40 +23,30 @@ const Ga4SessionsOutputSchema = z.object({
 });
 export type Ga4SessionsOutput = z.infer<typeof Ga4SessionsOutputSchema>;
 
-// Define a tool that can provide an authenticated Google Auth client
-const ga4DataApi = defineTool(
-    {
-        name: 'ga4DataApi',
-        description: 'Google Analytics Data API client',
-    },
-    async () => new GoogleAuth({
-        scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
-    })
-);
 
 const getGa4SessionsFlow = ai.defineFlow(
   {
     name: 'getGa4SessionsFlow',
     inputSchema: Ga4SessionsInputSchema,
     outputSchema: Ga4SessionsOutputSchema,
-    auth: (input) => {
-        return {
-            // This policy allows all requests to the flow. 
-            // You can also add more specific authorization logic here.
-            '': true, 
-        }
-    }
   },
-  async ({ propertyId, startDate, endDate }) => {
-    try {
-        const auth = await ga4DataApi();
-        const accessToken = await auth.getAccessToken();
+  async ({ propertyId, startDate, endDate }, context) => {
 
+    if (!context?.authenticated) {
+        throw new Error("Authentication is required to access Google Analytics data.");
+    }
+    
+    // Use the authenticated fetch provided by Genkit context
+    const fetch = context.auth?.fetch;
+    if (!fetch) {
+        throw new Error("Could not get an authenticated fetch instance.");
+    }
+
+    try {
         const response = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
                 dateRanges: [{ startDate, endDate }],
@@ -98,5 +86,8 @@ const getGa4SessionsFlow = ai.defineFlow(
 
 
 export async function getGa4Sessions(input: Ga4SessionsInput): Promise<Ga4SessionsOutput> {
-  return getGa4SessionsFlow(input);
+  // To call a flow from a server component, we need to wrap it in `run`
+  // and provide a placeholder for the auth object. The actual authentication
+  // will be handled by the Genkit plugin based on the environment.
+  return run(getGa4SessionsFlow, input, { auth: {} });
 }
