@@ -124,6 +124,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
              {renderAuthSection()}
 
              {user && (
+              <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-1 space-y-2">
                         <Label htmlFor="ga4-property-id">GA4 Property ID</Label>
@@ -144,28 +145,29 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
                          />
                     </div>
                 </div>
-            )}
             
-            {error && (
-                <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
-
-            <Button
-                type="button"
-                onClick={handleImport}
-                disabled={isLoading || !propertyId || !dateRange?.from || !dateRange?.to || !user}
-                className="w-full"
-            >
-                {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <Download className="mr-2 h-4 w-4" />
+                {error && (
+                    <Alert variant="destructive">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                    </Alert>
                 )}
-                Import Data
-            </Button>
+
+                <Button
+                    type="button"
+                    onClick={handleImport}
+                    disabled={isLoading || !propertyId || !dateRange?.from || !dateRange?.to || !user}
+                    className="w-full"
+                >
+                    {isLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                    )}
+                    Import Data
+                </Button>
+              </>
+            )}
         </CardContent>
     </Card>
   );

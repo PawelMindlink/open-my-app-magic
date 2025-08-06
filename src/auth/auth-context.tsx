@@ -20,23 +20,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
+    // This handles the redirect result after signing in.
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User has successfully signed in.
+          setUser(result.user);
+        }
+      } catch (error) {
+        console.error("Error getting redirect result:", error);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    handleRedirectResult();
+
+    // This handles keeping the user logged in across sessions.
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user); // This can be null if signed out.
+      // We set loading to false here as well, in case redirect result is null.
       setLoading(false);
     });
+    
     return () => unsubscribe();
   }, []);
 
   const signIn = async () => {
+    setLoading(true);
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
     try {
-      await signInWithRedirect(auth, provider);
+      // We don't need to await here, the page will redirect.
+      signInWithRedirect(auth, provider);
     } catch (error) {
-      console.error("Error during sign-in:", error);
-      // Handle errors here (e.g., show a toast notification)
+      console.error("Error during sign-in redirect:", error);
+      setLoading(false);
     }
   };
 
