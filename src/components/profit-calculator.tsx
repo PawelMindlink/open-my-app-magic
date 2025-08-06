@@ -24,10 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, ArrowUp, ArrowDown, FileDown } from "lucide-react";
+import { HelpCircle, ArrowUp, ArrowDown, FileDown, Import } from "lucide-react";
 import { Inputs, Currency, inputFields, EstimateLevel } from "@/lib/types";
 import { ProjectionsChart } from "./projections-chart";
 import { Button } from "./ui/button";
+import { GA4ImportDialog } from "./ga4-import-dialog";
 
 
 const currencySymbols: Record<Currency, string> = {
@@ -181,6 +182,7 @@ export function ProfitCalculator() {
   const [activeScenarios, setActiveScenarios] = useState<Scenario[]>([]);
   const [globalEstimateLevel, setGlobalEstimateLevel] = useState<EstimateLevel | 'individual'>('realistic');
   const [currency, setCurrency] = useState<Currency>("USD");
+  const [isGa4DialogOpen, setIsGa4DialogOpen] = useState(false);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,6 +192,11 @@ export function ProfitCalculator() {
       [name]: value === "" ? 0 : parseFloat(value),
     }));
   };
+
+  const handleGa4Import = (sessions: number) => {
+    setInputs(prev => ({ ...prev, organicSessions: sessions }));
+    setIsGa4DialogOpen(false);
+  }
 
   const results = useMemo(() => {
     const baseResults = calculateMetrics(inputs);
@@ -299,7 +306,7 @@ export function ProfitCalculator() {
           </div>
         ))}
     </div>
-  )
+  );
 
   const renderGeneralInputGroup = (group: string) => (
      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -314,7 +321,7 @@ export function ProfitCalculator() {
                    </Tooltip>
                  )}
             </Label>
-            <div className="relative">
+            <div className="relative flex items-center">
               {isCurrency && (
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
                   {currencySymbols[currency]}
@@ -326,9 +333,19 @@ export function ProfitCalculator() {
                 type="number"
                 value={inputs[name]}
                 onChange={handleInputChange}
-                className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
+                className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "", name === 'organicSessions' ? 'pr-12' : '')}
                 aria-describedby={`${name}-description`}
               />
+              {name === 'organicSessions' && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 h-8 w-8" onClick={() => setIsGa4DialogOpen(true)}>
+                      <Import className="w-5 h-5 text-primary/80"/>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Import from GA4</TooltipContent>
+                </Tooltip>
+              )}
               {isPercentage && (
                 <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
                   %
@@ -342,6 +359,8 @@ export function ProfitCalculator() {
 
 
   return (
+    <>
+    <GA4ImportDialog open={isGa4DialogOpen} onOpenChange={setIsGa4DialogOpen} onImport={handleGa4Import}/>
     <TooltipProvider delayDuration={0}>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-3 space-y-8">
@@ -726,6 +745,7 @@ export function ProfitCalculator() {
         </div>
       </div>
     </TooltipProvider>
+    </>
   );
 }
 
