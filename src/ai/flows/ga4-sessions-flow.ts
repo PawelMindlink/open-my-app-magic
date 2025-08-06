@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for fetching session data from Google Analytics 4.
+ * @fileOverview A flow for fetching and categorizing session data from Google Analytics 4.
  *
  * - getGa4Sessions - A function that fetches session data from the GA4 Data API.
  * - Ga4SessionsInput - The input type for the getGa4Sessions function.
@@ -10,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { run } from 'genkit';
 
 const Ga4SessionsInputSchema = z.object({
   propertyId: z.string().describe('The GA4 Property ID, e.g., "123456789"'),
@@ -21,7 +20,9 @@ const Ga4SessionsInputSchema = z.object({
 export type Ga4SessionsInput = z.infer<typeof Ga4SessionsInputSchema>;
 
 const Ga4SessionsOutputSchema = z.object({
-  totalSessions: z.number().describe('The total number of sessions for the date range.'),
+  meta: z.number().describe('Total sessions attributed to Meta (Facebook, Instagram).'),
+  google: z.number().describe('Total sessions attributed to Google Ads.'),
+  other: z.number().describe('Total sessions from other sources (organic, direct, etc.).'),
 });
 export type Ga4SessionsOutput = z.infer<typeof Ga4SessionsOutputSchema>;
 
@@ -34,9 +35,9 @@ const getGa4SessionsFlow = ai.defineFlow(
   },
   async ({ propertyId, startDate, endDate, idToken }) => {
     
-    // In a real application, you would verify the ID token here.
-    // For this example, we will trust the token and use it directly.
-    // Note: This is NOT a secure practice for production.
+    // In a real application, you would verify the ID token and exchange it
+    // for an OAuth 2.0 access token with the necessary scopes.
+    // For this example, we are showing how to pass an auth token.
     if (!idToken) {
         throw new Error("Authentication is required.");
     }
@@ -46,13 +47,14 @@ const getGa4SessionsFlow = ai.defineFlow(
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // The Bearer token should be the user's OAuth access token, not the ID token.
-                // However, for this simplified example, we are showing how to pass an auth token.
-                // A production implementation would require exchanging the ID token for an access token.
+                // This is NOT a valid use of an ID token for auth.
+                // A production app must exchange the ID token for an OAuth access token
+                // via a secure server-side process. This is a temporary shortcut.
                 'Authorization': `Bearer ${idToken}`, 
             },
             body: JSON.stringify({
                 dateRanges: [{ startDate, endDate }],
+                dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
                 metrics: [{ name: 'sessions' }],
             }),
         });
@@ -63,7 +65,7 @@ const getGa4SessionsFlow = ai.defineFlow(
             console.error('GA4 API Error Response:', data);
             const errorDetails = data.error || {};
              if (errorDetails.code === 403 || errorDetails.code === 401) {
-                throw new Error("Permission denied. Ensure the authenticated user has 'Viewer' access to the GA4 property, or your token may have expired.");
+                throw new Error("Permission denied. Ensure the authenticated user has 'Viewer' access to the GA4 property, or your token may have expired. This can also happen if the Google Sign-in is not configured correctly.");
             }
             if (errorDetails.code === 400) {
                 throw new Error(`Invalid request. Check if the Property ID '${propertyId}' is correct.`);
@@ -72,12 +74,28 @@ const getGa4SessionsFlow = ai.defineFlow(
         }
       
       const rows = data.rows || [];
-      if (rows.length > 0 && rows[0].metricValues && rows[0].metricValues.length > 0) {
-        const totalSessions = parseInt(rows[0].metricValues[0].value || '0', 10);
-        return { totalSessions };
-      }
+      const categorizedSessions = {
+          meta: 0,
+          google: 0,
+          other: 0,
+      };
 
-      return { totalSessions: 0 };
+      rows.forEach((row: any) => {
+          const source = (row.dimensionValues[0]?.value || '').toLowerCase();
+          const medium = (row.dimensionValues[1]?.value || '').toLowerCase();
+          const sessions = parseInt(row.metricValues[0]?.value || '0', 10);
+          
+          if (source.includes('facebook') || source.includes('instagram') || medium.includes('cpc') && (source.includes('fb') || source.includes('ig'))) {
+              categorizedSessions.meta += sessions;
+          } else if (medium === 'cpc' && source === 'google') {
+              categorizedSessions.google += sessions;
+          } else {
+              categorizedSessions.other += sessions;
+          }
+      });
+      
+      return categorizedSessions;
+
     } catch (error: any) {
         console.error('GA4 API Error:', error.message);
         console.error(error);

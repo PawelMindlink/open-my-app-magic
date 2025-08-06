@@ -1,37 +1,32 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2, LogIn, LogOut } from "lucide-react";
+import { Loader2, LogIn, LogOut, Download } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, subDays } from "date-fns";
-import { cn } from "@/lib/utils";
-import { getGa4Sessions } from '@/ai/flows/ga4-sessions-flow';
+import { getGa4Sessions, Ga4SessionsOutput } from '@/ai/flows/ga4-sessions-flow';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth } from '@/auth/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { DateRangePicker } from './date-range-picker';
 
 type GA4ImportDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onImport: (sessions: number) => void;
+  onImport: (sessions: Ga4SessionsOutput) => void;
 };
 
-export function GA4ImportDialog({ open, onOpenChange, onImport }: GA4ImportDialogProps) {
+export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
   const [propertyId, setPropertyId] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 29),
@@ -60,7 +55,7 @@ export function GA4ImportDialog({ open, onOpenChange, onImport }: GA4ImportDialo
       if (!idToken) {
         throw new Error("Could not retrieve authentication token.");
       }
-
+      
       const result = await getGa4Sessions({
         propertyId,
         startDate: format(dateRange.from, 'yyyy-MM-dd'),
@@ -68,12 +63,12 @@ export function GA4ImportDialog({ open, onOpenChange, onImport }: GA4ImportDialo
         idToken,
       });
 
-      onImport(result.totalSessions);
+      onImport(result);
+      const totalSessions = result.meta + result.google + result.other;
       toast({
         title: "Import Successful",
-        description: `Successfully imported ${result.totalSessions.toLocaleString()} sessions.`,
+        description: `Successfully imported ${totalSessions.toLocaleString()} total sessions.`,
       });
-      onOpenChange(false); // Close dialog on success
     } catch (e: any) {
       console.error(e);
       setError(e.message || "An unknown error occurred.");
@@ -93,7 +88,7 @@ export function GA4ImportDialog({ open, onOpenChange, onImport }: GA4ImportDialo
     }
     if (user) {
       return (
-        <div className="flex items-center justify-between rounded-lg border p-3">
+        <div className="flex items-center justify-between rounded-lg border p-3 bg-card">
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
@@ -118,90 +113,60 @@ export function GA4ImportDialog({ open, onOpenChange, onImport }: GA4ImportDialo
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Import Sessions from GA4</DialogTitle>
-          <DialogDescription>
-            Sign in with your Google account to import data from Google Analytics 4.
-          </DialogDescription>
-        </DialogHeader>
+    <Card className="bg-muted/30">
+        <CardHeader>
+            <CardTitle className="font-headline text-xl">GA4 Import</CardTitle>
+            <CardDescription>
+                Sign in and select a date range to pull session data from Google Analytics.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+             {renderAuthSection()}
 
-        <div className="space-y-4 py-4">
-          {renderAuthSection()}
-        
-          {user && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="ga4-property-id">GA4 Property ID</Label>
-                <Input
-                  id="ga4-property-id"
-                  placeholder="e.g., 123456789"
-                  value={propertyId}
-                  onChange={(e) => setPropertyId(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Date Range</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="date"
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !dateRange && "text-muted-foreground"
-                      )}
-                      disabled={isLoading}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange?.from ? (
-                        dateRange.to ? (
-                          <>
-                            {format(dateRange.from, "LLL dd, y")} -{" "}
-                            {format(dateRange.to, "LLL dd, y")}
-                          </>
-                        ) : (
-                          format(dateRange.from, "LLL dd, y")
-                        )
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      initialFocus
-                      mode="range"
-                      defaultMonth={dateRange?.from}
-                      selected={dateRange}
-                      onSelect={setDateRange}
-                      numberOfMonths={2}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </>
-          )}
+             {user && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1 space-y-2">
+                        <Label htmlFor="ga4-property-id">GA4 Property ID</Label>
+                        <Input
+                            id="ga4-property-id"
+                            placeholder="e.g., 123456789"
+                            value={propertyId}
+                            onChange={(e) => setPropertyId(e.target.value)}
+                            disabled={isLoading}
+                        />
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                         <Label>Date Range</Label>
+                         <DateRangePicker 
+                            dateRange={dateRange}
+                            onDateRangeChange={(range) => setDateRange(range)}
+                            disabled={isLoading}
+                         />
+                    </div>
+                </div>
+            )}
+            
+            {error && (
+                <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
 
-           {error && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleImport} disabled={isLoading || !propertyId || !dateRange?.from || !dateRange?.to || !user}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Import Data
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <Button
+                type="button"
+                onClick={handleImport}
+                disabled={isLoading || !propertyId || !dateRange?.from || !dateRange?.to || !user}
+                className="w-full"
+            >
+                {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                )}
+                Import Data
+            </Button>
+        </CardContent>
+    </Card>
   );
 }

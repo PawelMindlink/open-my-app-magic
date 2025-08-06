@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, ArrowUp, ArrowDown, FileDown, Import } from "lucide-react";
+import { HelpCircle, ArrowUp, ArrowDown, FileDown } from "lucide-react";
 import { Inputs, Currency, inputFields, EstimateLevel } from "@/lib/types";
 import { ProjectionsChart } from "./projections-chart";
 import { Button } from "./ui/button";
@@ -182,7 +182,6 @@ export function ProfitCalculator() {
   const [activeScenarios, setActiveScenarios] = useState<Scenario[]>([]);
   const [globalEstimateLevel, setGlobalEstimateLevel] = useState<EstimateLevel | 'individual'>('realistic');
   const [currency, setCurrency] = useState<Currency>("USD");
-  const [isGa4DialogOpen, setIsGa4DialogOpen] = useState(false);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,9 +192,16 @@ export function ProfitCalculator() {
     }));
   };
 
-  const handleGa4Import = (sessions: number) => {
-    setInputs(prev => ({ ...prev, organicSessions: sessions }));
-    setIsGa4DialogOpen(false);
+  const handleGa4Import = (sessions: { meta: number, google: number, other: number }) => {
+    // For now, let's just update organic sessions with the 'other' bucket.
+    // In a future step, we could update ad-channel specific sessions.
+    setInputs(prev => ({ 
+        ...prev, 
+        organicSessions: sessions.other 
+        // We could also set the paid sessions here, but that would require
+        // a more complex calculation based on budget and CPC.
+        // For now, we'll let the user manage ad budgets separately.
+    }));
   }
 
   const results = useMemo(() => {
@@ -333,19 +339,9 @@ export function ProfitCalculator() {
                 type="number"
                 value={inputs[name]}
                 onChange={handleInputChange}
-                className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "", name === 'organicSessions' ? 'pr-12' : '')}
+                className={cn("transition-shadow", isCurrency ? "pl-7" : "", isPercentage ? "pr-8" : "")}
                 aria-describedby={`${name}-description`}
               />
-              {name === 'organicSessions' && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 h-8 w-8" onClick={() => setIsGa4DialogOpen(true)}>
-                      <Import className="w-5 h-5 text-primary/80"/>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Import from GA4</TooltipContent>
-                </Tooltip>
-              )}
               {isPercentage && (
                 <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
                   %
@@ -359,8 +355,6 @@ export function ProfitCalculator() {
 
 
   return (
-    <>
-    <GA4ImportDialog open={isGa4DialogOpen} onOpenChange={setIsGa4DialogOpen} onImport={handleGa4Import}/>
     <TooltipProvider delayDuration={0}>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-3 space-y-8">
@@ -392,6 +386,9 @@ export function ProfitCalculator() {
                 </div>
             </CardHeader>
             <CardContent>
+              <GA4ImportDialog onImport={handleGa4Import} />
+              <Separator className="my-6" />
+
               <h3 className="font-headline text-xl mb-4 text-primary/80">Paid Ads</h3>
               <div className="space-y-6 p-4 border rounded-lg">
                   <div className="flex justify-between items-center mb-4">
@@ -474,15 +471,15 @@ export function ProfitCalculator() {
               <Separator className="my-8" />
               <h3 className="font-headline text-xl mb-4 text-primary/80">Organic &amp; Profitability</h3>
                <div className="space-y-6 p-4 border rounded-lg">
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2">
-                        <h4 className="font-headline text-lg">Organic</h4>
+                <div className="grid grid-cols-1">
+                    <h4 className="font-headline text-lg mb-4 flex items-center gap-2">
+                        Organic
                         <Tooltip>
                             <TooltipTrigger asChild><button type="button"><HelpCircle className="w-4 h-4 text-muted-foreground"/></button></TooltipTrigger>
                             <TooltipContent><p>Traffic from unpaid sources like SEO, direct visits, email, and social media.</p></TooltipContent>
                         </Tooltip>
-                    </div>
-                  {renderGeneralInputGroup('organic')}
+                    </h4>
+                    {renderGeneralInputGroup('organic')}
                 </div>
                 <Separator/>
                 <div>
@@ -745,7 +742,6 @@ export function ProfitCalculator() {
         </div>
       </div>
     </TooltipProvider>
-    </>
   );
 }
 

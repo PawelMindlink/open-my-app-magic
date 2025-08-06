@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithRedirect, GoogleAuthProvider, signOut as firebaseSignOut, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase'; // Adjust this path if needed
 
 interface AuthContextType {
@@ -21,7 +21,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+      if (user) {
+        setUser(user);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -31,7 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
     try {
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error("Error during sign-in:", error);
       // Handle errors here (e.g., show a toast notification)
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      setUser(null); // Explicitly set user to null on sign out
     } catch (error) {
       console.error("Error during sign-out:", error);
     }
@@ -48,7 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const getToken = async (): Promise<string | null> => {
     if (!auth.currentUser) return null;
-    return await auth.currentUser.getIdToken();
+    return await auth.currentUser.getIdToken(true); // Force refresh
   }
 
 
