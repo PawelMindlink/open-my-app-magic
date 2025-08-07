@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { useAuth } from '@/auth/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DateRangePicker } from './date-range-picker';
+import { cn } from '@/lib/utils';
 
 type GA4ImportDialogProps = {
   onImport: (sessions: Ga4SessionsOutput) => void;
@@ -32,7 +33,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
     from: subDays(new Date(), 29),
     to: new Date(),
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, loading: authLoading, signIn, signOut, getToken } = useAuth();
@@ -47,7 +48,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
         return;
     }
     
-    setIsLoading(true);
+    setIsImporting(true);
     setError(null);
 
     try {
@@ -78,7 +79,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
         description: e.message || "Could not fetch data from Google Analytics.",
       });
     } finally {
-      setIsLoading(false);
+      setIsImporting(false);
     }
   };
 
@@ -106,7 +107,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
       )
     }
     return (
-      <Button onClick={signIn} className="w-full">
+      <Button onClick={signIn} className="w-full" disabled={authLoading}>
         <LogIn className="mr-2 h-4 w-4" /> Sign in with Google
       </Button>
     )
@@ -123,51 +124,47 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
         <CardContent className="space-y-4">
              {renderAuthSection()}
 
-             {user && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1 space-y-2">
-                        <Label htmlFor="ga4-property-id">GA4 Property ID</Label>
-                        <Input
-                            id="ga4-property-id"
-                            placeholder="e.g., 123456789"
-                            value={propertyId}
-                            onChange={(e) => setPropertyId(e.target.value)}
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                         <Label>Date Range</Label>
-                         <DateRangePicker 
-                            dateRange={dateRange}
-                            onDateRangeChange={(range) => setDateRange(range)}
-                            disabled={isLoading}
-                         />
-                    </div>
-                </div>
-            
-                {error && (
-                    <Alert variant="destructive">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <div className="md:col-span-1 space-y-2">
+                     <Label htmlFor="ga4-property-id" className={cn(!user && "text-muted-foreground/50")}>GA4 Property ID</Label>
+                     <Input
+                         id="ga4-property-id"
+                         placeholder="e.g., 123456789"
+                         value={propertyId}
+                         onChange={(e) => setPropertyId(e.target.value)}
+                         disabled={isImporting || !user}
+                     />
+                 </div>
+                 <div className="md:col-span-2 space-y-2">
+                      <Label className={cn(!user && "text-muted-foreground/50")}>Date Range</Label>
+                      <DateRangePicker 
+                         dateRange={dateRange}
+                         onDateRangeChange={(range) => setDateRange(range)}
+                         disabled={isImporting || !user}
+                      />
+                 </div>
+             </div>
+         
+             {error && (
+                 <Alert variant="destructive">
+                 <AlertTitle>Error</AlertTitle>
+                 <AlertDescription>{error}</AlertDescription>
+                 </Alert>
+             )}
 
-                <Button
-                    type="button"
-                    onClick={handleImport}
-                    disabled={isLoading || !propertyId || !dateRange?.from || !dateRange?.to || !user}
-                    className="w-full"
-                >
-                    {isLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Download className="mr-2 h-4 w-4" />
-                    )}
-                    Import Data
-                </Button>
-              </>
-            )}
+             <Button
+                 type="button"
+                 onClick={handleImport}
+                 disabled={isImporting || !propertyId || !dateRange?.from || !dateRange?.to || !user}
+                 className="w-full"
+             >
+                 {isImporting ? (
+                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                 ) : (
+                     <Download className="mr-2 h-4 w-4" />
+                 )}
+                 Import Data
+             </Button>
         </CardContent>
     </Card>
   );
