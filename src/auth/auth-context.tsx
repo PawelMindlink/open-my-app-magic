@@ -23,25 +23,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    authPromise.then(authInstance => {
-        setAuth(authInstance);
-        const unsubscribe = onAuthStateChanged(authInstance, (user) => {
-            setUser(user);
-            setLoading(false);
-        });
-        // Cleanup subscription on unmount
-        return () => unsubscribe();
-    });
+    authPromise.then(setAuth);
   }, []);
+
+  useEffect(() => {
+    if (!auth) return;
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setLoading(false);
+    });
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [auth]);
 
   const signIn = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
+    setLoading(true);
     try {
-      const result: UserCredential = await signInWithPopup(auth, provider);
-      setUser(result.user);
-      setLoading(false);
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle setting the user and loading state
     } catch (error: any) {
       // Don't show a toast if the user simply closed the popup
       if (error.code !== 'auth/popup-closed-by-user') {
