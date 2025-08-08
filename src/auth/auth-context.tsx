@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, Auth } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, Auth, UserCredential } from 'firebase/auth';
 import { authPromise } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,15 +39,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
     try {
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged will handle setting the user and loading state
+      const result: UserCredential = await signInWithPopup(auth, provider);
+      setUser(result.user);
+      setLoading(false);
     } catch (error: any) {
-      console.error("Error during sign-in:", error);
-       toast({
-        variant: "destructive",
-        title: "Sign-In Failed",
-        description: error.message || "An unknown error occurred during sign-in.",
-      });
+      // Don't show a toast if the user simply closed the popup
+      if (error.code !== 'auth/popup-closed-by-user') {
+          console.error("Error during sign-in:", error);
+          toast({
+            variant: "destructive",
+            title: "Sign-In Failed",
+            description: error.message || "An unknown error occurred during sign-in.",
+          });
+      }
       setLoading(false);
     }
   };
@@ -64,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const getToken = async (): Promise<string | null> => {
     if (!auth || !auth.currentUser) return null;
-    return await auth.currentUser.getIdToken(); 
+    return await auth.currentUser.getIdToken(true); // Force refresh
   }
 
   return (
