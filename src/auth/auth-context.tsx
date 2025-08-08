@@ -2,8 +2,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, Auth } from 'firebase/auth';
+import { authPromise } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -18,20 +18,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [auth, setAuth] = useState<Auth | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
+    authPromise.then(authInstance => {
+        setAuth(authInstance);
+        const unsubscribe = onAuthStateChanged(authInstance, (user) => {
+            setUser(user);
+            setLoading(false);
+        });
+        // Cleanup subscription on unmount
+        return () => unsubscribe();
     });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
   }, []);
 
   const signIn = async () => {
+    if (!auth) return;
     setLoading(true);
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
@@ -50,6 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (!auth) return;
     try {
       await firebaseSignOut(auth);
       setUser(null);
@@ -59,7 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const getToken = async (): Promise<string | null> => {
-    if (!auth.currentUser) return null;
+    if (!auth || !auth.currentUser) return null;
     return await auth.currentUser.getIdToken(); 
   }
 
