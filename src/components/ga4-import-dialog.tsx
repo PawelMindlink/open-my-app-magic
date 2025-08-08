@@ -118,7 +118,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
         <CardHeader>
             <CardTitle className="font-headline text-xl">GA4 Import</CardTitle>
             <CardDescription>
-                Sign in and select a date range to pull session data from Google Analytics.
+                Sign in to your Google Account to pull session data directly from Google Analytics. Your domain must be authorized in Firebase.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -132,7 +132,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
                          placeholder="e.g., 123456789"
                          value={propertyId}
                          onChange={(e) => setPropertyId(e.target.value)}
-                         disabled={isImporting || !user}
+                         disabled={isImporting || !user || authLoading}
                      />
                  </div>
                  <div className="md:col-span-2 space-y-2">
@@ -140,7 +140,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
                       <DateRangePicker 
                          dateRange={dateRange}
                          onDateRangeChange={(range) => setDateRange(range)}
-                         disabled={isImporting || !user}
+                         disabled={isImporting || !user || authLoading}
                       />
                  </div>
              </div>
@@ -155,7 +155,7 @@ export function GA4ImportDialog({ onImport }: GA4ImportDialogProps) {
              <Button
                  type="button"
                  onClick={handleImport}
-                 disabled={isImporting || !propertyId || !dateRange?.from || !dateRange?.to || !user}
+                 disabled={isImporting || !propertyId || !dateRange?.from || !dateRange?.to || !user || authLoading}
                  className="w-full"
              >
                  {isImporting ? (
