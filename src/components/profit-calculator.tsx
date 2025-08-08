@@ -29,6 +29,7 @@ import { Inputs, Currency, inputFields, EstimateLevel } from "@/lib/types";
 import { ProjectionsChart } from "./projections-chart";
 import { Button } from "./ui/button";
 import { GA4ImportDialog } from "./ga4-import-dialog";
+import { useAuth } from "@/auth/auth-context";
 
 
 const currencySymbols: Record<Currency, string> = {
@@ -182,6 +183,7 @@ export function ProfitCalculator() {
   const [activeScenarios, setActiveScenarios] = useState<Scenario[]>([]);
   const [globalEstimateLevel, setGlobalEstimateLevel] = useState<EstimateLevel | 'individual'>('realistic');
   const [currency, setCurrency] = useState<Currency>("USD");
+  const { user, loading: authLoading } = useAuth();
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,7 +388,7 @@ export function ProfitCalculator() {
                 </div>
             </CardHeader>
             <CardContent>
-              <GA4ImportDialog onImport={handleGa4Import} />
+              {!authLoading && <GA4ImportDialog onImport={handleGa4Import} />}
               <Separator className="my-6" />
 
               <h3 className="font-headline text-xl mb-4 text-primary/80">Paid Ads</h3>
@@ -744,7 +746,5 @@ export function ProfitCalculator() {
     </TooltipProvider>
   );
 }
-
-    
 
     

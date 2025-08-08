@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, Auth, UserCredential } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, Auth } from 'firebase/auth';
 import { authPromise } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/analytics.readonly');
-    setLoading(true);
     try {
       await signInWithPopup(auth, provider);
       // onAuthStateChanged will handle setting the user and loading state
@@ -55,7 +54,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             description: error.message || "An unknown error occurred during sign-in.",
           });
       }
-      setLoading(false);
     }
   };
 
@@ -88,3 +86,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    
